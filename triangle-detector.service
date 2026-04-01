@@ -1,0 +1,21 @@
+[Unit]
+Description=MHSF Triangle Detector Application
+After=network.target graphical.target
+Wants=display-manager.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+Environment="QT_QPA_PLATFORM=xcb"
+WorkingDirectory=/home/pi/MHSF_Guide
+ExecStart=/usr/bin/python3 /home/pi/MHSF_Guide/triangle_detector_app_CV.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=graphical.target
