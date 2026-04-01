@@ -10,9 +10,7 @@ cd ~/MHSF_Guide
 bash setup.sh
 ```
 
-Choose options when prompted:
-- Install YOLO support? → `y` or `n` (optional)
-- Enable auto-start on boot? → `y` (recommended)
+Click "Enable auto-start on boot?" when prompted (recommended).
 
 ### 2. Verify Installation
 ```bash
@@ -48,7 +46,6 @@ bash setup.sh
 ✓ Checks Python 3 installation  
 ✓ Updates pip package manager  
 ✓ Installs PySide6, OpenCV, NumPy  
-✓ Optionally installs Ultralytics/YOLO  
 ✓ Creates systemd service file  
 ✓ Sets up auto-boot configuration  
 
@@ -201,7 +198,6 @@ vncserver
 ├── run_detector.sh                   # Simple run wrapper
 ├── triangle-detector.service         # Systemd service file
 ├── triangle_detector_app_CV.py       # OpenCV version (main)
-├── triangle_detector_app_YOLO.py     # YOLO version (optional)
 ├── triangle_config.json              # Config (created on first run)
 ├── README.md                         # User documentation
 └── INSTALL_INSTRUCTIONS.md           # This file
@@ -271,28 +267,6 @@ vcgencmd measure_temp  # CPU temperature
 
 ---
 
-## Using YOLO Version
-
-### Install & Configure
-```bash
-bash setup.sh
-# Select: Install YOLO8world support? y
-```
-
-### Run YOLO Version
-```bash
-# Instead of CV version:
-python3 triangle_detector_app_YOLO.py
-
-# Or modify setup to run YOLO at boot:
-sudo nano /etc/systemd/system/triangle-detector.service
-# Change: ExecStart=/usr/bin/python3 /home/pi/MHSF_Guide/triangle_detector_app_YOLO.py
-sudo systemctl daemon-reload
-sudo systemctl restart triangle-detector
-```
-
----
-
 ## Uninstall / Cleanup
 
 ### Disable Service
@@ -305,7 +279,7 @@ sudo systemctl daemon-reload
 
 ### Remove Installation
 ```bash
-python3 -m pip uninstall PySide6 opencv-python numpy ultralytics -y
+python3 -m pip uninstall PySide6 opencv-python numpy -y
 rm -rf ~/MHSF_Guide
 ```
 

@@ -55,16 +55,8 @@ pip install PySide6 opencv-python numpy
 ```
 
 ### 3. Run Application
-
-**OpenCV-based version (recommended for edge devices):**
 ```bash
 python triangle_detector_app_CV.py
-```
-
-**YOLO-based version (higher accuracy, requires more resources):**
-```bash
-pip install ultralytics
-python triangle_detector_app_YOLO.py
 ```
 
 ## Usage Guide
@@ -254,7 +246,6 @@ Status Update & Rendering
 ### Raspberry Pi 5 Compatibility
 ✅ **Supported** - runs at 20+ fps
 - Adjust resolution or Min Area for slower devices
-- YOLO version requires more resources
 
 ### Optimization Tips
 - Reduce min area if missing small triangles
@@ -293,9 +284,6 @@ if len(approx) == 3 and area > self.min_area:
     if 0.7 < aspect_ratio < 1.3:
         # ... rest of code
 ```
-
-### Switching to YOLO
-Use `triangle_detector_app_YOLO.py` - same UI, different backend
 
 ### Custom Config
 Edit `triangle_config.json` before running:

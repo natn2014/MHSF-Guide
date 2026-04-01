@@ -17,7 +17,7 @@ echo "✓ Project directory: $SCRIPT_DIR"
 echo ""
 
 # Step 1: Check if Python 3 is installed
-echo "[1/6] Checking Python installation..."
+echo "[1/5] Checking Python installation..."
 if ! command -v python3 &> /dev/null; then
     echo "✗ Python 3 is not installed"
     echo "Install with: sudo apt-get install python3 python3-pip"
@@ -28,33 +28,20 @@ echo "✓ Found: $PYTHON_VERSION"
 echo ""
 
 # Step 2: Upgrade pip
-echo "[2/6] Updating pip..."
+echo "[2/5] Updating pip..."
 python3 -m pip install --upgrade pip --quiet
 echo "✓ pip updated"
 echo ""
 
 # Step 3: Install Python dependencies
-echo "[3/6] Installing Python dependencies..."
+echo "[3/5] Installing Python dependencies..."
 echo "     Installing: PySide6, opencv-python, numpy"
 python3 -m pip install PySide6 opencv-python numpy --quiet
 echo "✓ Core dependencies installed"
 echo ""
 
-# Ask if user wants to install YOLO version dependencies
-echo "[4/6] Optional YOLO support..."
-read -p "Install YOLO8world support? (y/n): " -n 1 -r
-echo ""
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "     Installing: ultralytics (YOLO)"
-    python3 -m pip install ultralytics --quiet
-    echo "✓ YOLO dependencies installed"
-else
-    echo "⊘ Skipped YOLO installation"
-fi
-echo ""
-
 # Step 4: Create systemd service file
-echo "[5/6] Creating systemd service..."
+echo "[4/5] Creating systemd service..."
 SERVICE_FILE="/etc/systemd/system/triangle-detector.service"
 
 # Check if running with sudo for systemd installation
@@ -100,7 +87,7 @@ EOF
 fi
 
 # Step 5: Create run script wrapper
-echo "[6/6] Creating run wrapper script..."
+echo "[5/5] Creating run wrapper script..."
 RUN_SCRIPT="$SCRIPT_DIR/run_detector.sh"
 
 cat > "$RUN_SCRIPT" << 'EOF'
