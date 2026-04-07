@@ -69,23 +69,25 @@ echo ""
 
 # Step 5: Install Python dependencies in virtual environment
 echo "[5/6] Installing Python dependencies..."
-echo "     Installing: PySide6 6.7.x (best ARM support), opencv-python, numpy"
-echo "     (This may take 5-10 minutes on first install as compilation may be needed)"
+echo "     Installing: PySide2 5.15.x (best Pi5 compatibility), opencv-python, numpy"
+echo "     (Installation takes ~1-2 minutes - pre-built wheels, no compilation needed)"
 
-# Try to install specific PySide6 version optimized for ARM (6.7.x has best Pi5 support)
-if "$VENV_PATH/bin/python3" -m pip install \
+# Install PySide2 5.15.x - has excellent pre-built ARM64 wheels, faster and more reliable than PySide6
+"$VENV_PATH/bin/python3" -m pip install \
     --default-timeout=1000 \
-    'PySide6>=6.7.0,<6.8.0' \
-    opencv-python numpy 2>&1; then
+    'PySide2>=5.15.0,<5.16.0' \
+    opencv-python numpy --quiet
+
+if [ $? -eq 0 ]; then
     echo "✓ Core dependencies installed successfully"
 else
     echo ""
-    echo "⚠ Version 6.7.x installation failed, trying flexible versioning..."
-    # Fallback to any recent stable version with good ARM support
+    echo "⚠ Installation failed, retrying with flexible versioning..."
+    # Fallback to any stable PySide2 5.15.x version
     "$VENV_PATH/bin/python3" -m pip install \
         --default-timeout=1000 \
         --retries 5 \
-        'PySide6>=6.6.0' \
+        'PySide2>=5.15.0' \
         opencv-python numpy
     echo "✓ Core dependencies installed"
 fi
@@ -115,8 +117,6 @@ Group=pi
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/pi/.Xauthority"
 Environment="QT_QPA_PLATFORM=xcb"
-Environment="QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/plugins"
-Environment="LD_LIBRARY_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/lib:/usr/lib/arm-linux-gnueabihf:/usr/local/lib:$LD_LIBRARY_PATH"
 Environment="HOME=/home/pi"
 WorkingDirectory=/home/pi/MHSF_Guide
 ExecStartPre=/bin/sleep 3
@@ -175,7 +175,10 @@ if [ -z "$XAUTHORITY" ]; then
 fi
 
 export QT_QPA_PLATFORM=xcb
-export QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/plugins
+# QT plugin path for PySide2 (will work from venv)
+if [ -d ".venv/lib/python*/site-packages/PySide2/Qt/plugins" ]; then
+    export QT_QPA_PLATFORM_PLUGIN_PATH=".venv/lib/python*/site-packages/PySide2/Qt/plugins"
+fi
 
 python3 triangle_detector_app_CV.py
 EOF
