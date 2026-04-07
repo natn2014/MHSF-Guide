@@ -8,7 +8,11 @@ Complete installation and setup guide for desktop systems and Raspberry Pi 5 wit
 
 ### For Windows/Mac/Linux Desktop
 ```bash
-# Install dependencies
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies (no PEP 668 issues!)
 pip install PySide6 opencv-python numpy
 
 # Run application
@@ -93,10 +97,11 @@ sudo bash setup.sh
 **What the script does:**
 - ✅ Step [1/6]: Verifies Python 3 installation
 - ✅ Step [2/6]: **Installs system libraries for Pi5** (Qt, OpenGL, X11)
-- ✅ Step [3/6]: Updates pip with setuptools & wheel
-- ✅ Step [4/6]: Installs Python packages (PySide6, OpenCV, NumPy)
-- ✅ Step [5/6]: Creates systemd service file for auto-start
-- ✅ Step [6/6]: Creates convenient run wrapper script
+- ✅ Step [3/6]: **Creates isolated Python virtual environment** (avoids PEP 668 errors!)
+- ✅ Step [4/6]: Updates pip with setuptools & wheel in venv
+- ✅ Step [5/6]: Installs Python packages (PySide6, OpenCV, NumPy) in venv
+- ✅ Step [6/6]: Creates systemd service file for auto-start using venv Python
+- ✅ Step [7/7]: Creates convenient run wrapper script with venv activation
 
 **Expected output:**
 ```
@@ -109,19 +114,23 @@ Pi5 Edition with Auto-Start
 [2/6] Installing system dependencies for Pi5...
      Installing Qt libraries, OpenGL support...
 ✓ System dependencies installed
-[3/6] Updating pip...
+[3/6] Creating Python virtual environment...
+✓ Virtual environment created at: /home/pi/MHSF_Guide/.venv
+[4/6] Updating pip in virtual environment...
 ✓ pip updated
-[4/6] Installing Python dependencies...
+[5/6] Installing Python dependencies...
 ✓ Core dependencies installed
-[5/6] Creating systemd service for auto-start...
+[6/6] Creating systemd service for auto-start...
 ✓ Systemd service created: /etc/systemd/system/triangle-detector.service
 ✓ Service enabled for auto-start on reboot
-[6/6] Creating run wrapper script...
+[7/7] Creating run wrapper script...
 ✓ Wrapper script created: /home/pi/MHSF_Guide/run_detector.sh
 
 ================================
 Setup Complete!
 ================================
+Virtual Environment: /home/pi/MHSF_Guide/.venv
+Dependencies installed in isolated venv
 
 3. Systemd Service (auto-start on reboot):
    Status:  sudo systemctl status triangle-detector
@@ -132,8 +141,6 @@ Setup Complete!
 Logs:
    Real-time: sudo journalctl -u triangle-detector -f
    Recent:    sudo journalctl -u triangle-detector -n 50
-
-✓ AUTO-START ON REBOOT CONFIGURED
 ```
 
 #### 1c. Test Installation
@@ -369,6 +376,48 @@ Edit `triangle_config.json`:
 ---
 
 ## 🐛 Troubleshooting
+
+### Issue: PEP 668 - externally-managed-environment Error
+
+**Error message:**
+```
+error: externally-managed-environment
+
+× This environment is externally managed
+```
+
+**Root cause:**
+Modern versions of Raspberry Pi OS (and Debian) use PEP 668 to prevent system pip from conflicting with system package manager.
+
+**Solution 1: Use Virtual Environment (Recommended)**
+```bash
+# Desktop/Manual setup
+python3 -m venv venv
+source venv/bin/activate  # or: source .venv/bin/activate
+pip install PySide6 opencv-python numpy
+```
+
+**Solution 2: Automated Setup Script (for Pi5)**
+```bash
+cd ~/MHSF_Guide
+sudo bash setup.sh
+# Automatically creates and uses virtual environment!
+```
+
+The setup.sh script automatically:
+- Creates a `.venv` directory
+- Installs all packages in the isolated environment
+- Configures systemd service to use venv Python
+- Wraps run script to activate venv before execution
+
+**Solution 3: System-Wide Installation (Not Recommended)**
+If you absolutely need system-wide installation:
+```bash
+python3 -m pip install --break-system-packages PySide6 opencv-python numpy
+```
+⚠️ **Warning**: This bypasses PEP 668 safety checks and can cause conflicts with system updates.
+
+---
 
 ### Issue: No Module Named PySide6
 
