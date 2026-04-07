@@ -31,7 +31,7 @@ echo ""
 # Step 2: Install system dependencies (Pi5 requirements for PyQt5/Qt)
 echo "[2/7] Installing system dependencies for Pi5..."
 if [[ $EUID -eq 0 ]]; then
-    echo "     Installing Qt libraries, OpenGL support, build tools, and Python dev..."
+    echo "     Installing Qt libraries, OpenGL support, build tools, Python dev, and NumPy..."
     apt-get update -qq
     apt-get install -y -qq \
         build-essential python3-dev cmake \
@@ -40,7 +40,8 @@ if [[ $EUID -eq 0 ]]; then
         libx11-6 libxext6 libxrender1 libxcb1 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
         libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 \
         libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 libwayland-client0 \
-        libwebkit2gtk-4.0-dev clang libclang-dev > /dev/null 2>&1
+        libwebkit2gtk-4.0-dev clang libclang-dev \
+        python3-numpy > /dev/null 2>&1
     echo "✓ System dependencies installed"
     
     # Install system PyQt5 from Raspbian repository (within same step for brevity)
@@ -77,30 +78,17 @@ echo ""
 
 # Step 5: Install remaining Python dependencies in virtual environment
 echo "[5/7] Installing remaining Python dependencies..."
-echo "     Installing: numpy, opencv-python"
-echo "     (PyQt5 provided by system package, installation takes ~30-60 seconds)"
+echo "     Installing: opencv-python"
+echo "     (NumPy and PyQt5 provided by system packages, installation takes ~30-60 seconds)"
 
-# Install numpy first (opencv-python depends on it)
-"$VENV_PATH/bin/python3" -m pip install \
-    --default-timeout=1000 \
-    numpy --quiet
-
-if [ $? -ne 0 ]; then
-    echo "⚠ NumPy installation failed, retrying..."
-    "$VENV_PATH/bin/python3" -m pip install \
-        --default-timeout=1000 \
-        --retries 5 \
-        numpy
-fi
-
-# Then install opencv-python
+# Install opencv-python (numpy is already installed as system package)
 "$VENV_PATH/bin/python3" -m pip install \
     --default-timeout=1000 \
     opencv-python --quiet
 
 if [ $? -eq 0 ]; then
     echo "✓ Python dependencies installed successfully"
-    echo "  - NumPy: installed via pip"
+    echo "  - NumPy: provided by system package (python3-numpy)"
     echo "  - OpenCV: installed via pip"
     echo "  - PyQt5: provided by system package (python3-pyqt5)"
 else
