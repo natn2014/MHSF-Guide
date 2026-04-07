@@ -31,9 +31,16 @@ echo ""
 # Step 2: Install system dependencies (Pi5 requirements for PySide6/Qt)
 echo "[2/6] Installing system dependencies for Pi5..."
 if [[ $EUID -eq 0 ]]; then
-    echo "     Installing Qt libraries, OpenGL support, and build tools..."
+    echo "     Installing Qt libraries, OpenGL support, build tools, and Python dev..."
     apt-get update -qq
-    apt-get install -y -qq libgl1-mesa-glx libxkbcommon-x11-0 libxkbcommon0 libdbus-1-3 libfontconfig1 libfreetype6 libharfbuzz0b libjpeg62-turbo libpng16-16 libtiff6 libpulse0 libssl3 libzstd1 libx11-6 libxext6 libxrender1 libxcb1 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 libwayland-client0 > /dev/null 2>&1
+    apt-get install -y -qq \
+        build-essential python3-dev cmake \
+        libgl1-mesa-glx libxkbcommon-x11-0 libxkbcommon0 libdbus-1-3 libfontconfig1 libfreetype6 libharfbuzz0b \
+        libjpeg62-turbo libpng16-16 libtiff6 libpulse0 libssl3 libzstd1 \
+        libx11-6 libxext6 libxrender1 libxcb1 libxcb-glx0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+        libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-util1 libxcb-xfixes0 \
+        libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 libwayland-client0 \
+        libwebkit2gtk-4.0-dev clang libclang-dev > /dev/null 2>&1
     echo "✓ System dependencies installed"
 else
     echo "⚠ Skipping system dependencies (requires sudo)"
@@ -63,8 +70,25 @@ echo ""
 # Step 5: Install Python dependencies in virtual environment
 echo "[5/6] Installing Python dependencies..."
 echo "     Installing: PySide6, opencv-python, numpy"
-"$VENV_PATH/bin/python3" -m pip install PySide6 opencv-python numpy --quiet
-echo "✓ Core dependencies installed"
+echo "     (This may take 5-10 minutes on first install as PySide6 may need to compile)"
+
+# Try to install with longer timeout and proper pip cache handling
+if "$VENV_PATH/bin/python3" -m pip install \
+    --default-timeout=1000 \
+    --no-cache-dir \
+    --no-binary PySide6 \
+    PySide6 opencv-python numpy 2>&1; then
+    echo "✓ Core dependencies installed successfully"
+else
+    echo ""
+    echo "⚠ First attempt failed, retrying with continued installation..."
+    # Retry with fallback - install without --no-binary flag
+    "$VENV_PATH/bin/python3" -m pip install \
+        --default-timeout=1000 \
+        --retries 5 \
+        PySide6 opencv-python numpy
+    echo "✓ Core dependencies installed"
+fi
 echo ""
 
 # Step 6: Create systemd service file
