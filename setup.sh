@@ -117,7 +117,8 @@ fi
 # Verify all required modules are available
 echo ""
 echo "     Verifying module imports..."
-"$VENV_PATH/bin/python3" -c "import json; import numpy; import cv2; print('✓ json: OK'); print('✓ numpy: OK'); print('✓ cv2 (OpenCV): OK')" 2>/dev/null
+echo "     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+"$VENV_PATH/bin/python3" -c "import json; import numpy; import cv2; print(''); print('  ✓ json: OK'); print('  ✓ numpy: OK'); print('  ✓ cv2 (OpenCV): OK'); print('')" 2>/dev/null
 
 if [ $? -ne 0 ]; then
     echo "⚠ Warning: Some modules failed to import. Checking individually..."
