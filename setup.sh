@@ -121,12 +121,18 @@ echo "     ━━━━━━━━━━━━━━━━━━━━━━━
 
 # Test imports using full venv path to avoid numpy source directory issues
 cd "$SCRIPT_DIR"  # Ensure we're not in numpy source directory
-"$VENV_PATH/bin/python3" -c "import json; import numpy; import cv2; print(''); print('  ✓ json: OK'); print('  ✓ numpy: OK'); print('  ✓ cv2 (OpenCV): OK'); print('')" 2>/dev/null
 
-if [ $? -ne 0 ]; then
+# Use timeout to prevent hanging (10 second max for verification)
+timeout 10 "$VENV_PATH/bin/python3" -c "import json; import numpy; import cv2; print(''); print('  ✓ json: OK'); print('  ✓ numpy: OK'); print('  ✓ cv2 (OpenCV): OK'); print('')" 2>&1
+
+VERIFY_RESULT=$?
+if [ $VERIFY_RESULT -eq 124 ]; then
+    echo "⚠ Verification timeout - imports took too long"
+    exit 1
+elif [ $VERIFY_RESULT -ne 0 ]; then
     echo "⚠ Warning: Some modules failed to import. Checking individually..."
     "$VENV_PATH/bin/python3" -c "import json" 2>/dev/null && echo "  ✓ json available" || echo "  ✗ json NOT available"
-    "$VENV_PATH/bin/python3" -c "import sys; import numpy" 2>/dev/null && echo "  ✓ numpy available" || echo "  ✗ numpy NOT available or import error - Try: $VENV_PATH/bin/pip install --force-reinstall numpy"
+    "$VENV_PATH/bin/python3" -c "import sys; import numpy" 2>&1 | head -3
     "$VENV_PATH/bin/python3" -c "import cv2" 2>/dev/null && echo "  ✓ cv2 available" || echo "  ✗ cv2 NOT available - Try: pip install opencv-python"
     exit 1
 fi
