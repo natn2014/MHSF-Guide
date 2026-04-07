@@ -118,12 +118,15 @@ fi
 echo ""
 echo "     Verifying module imports..."
 echo "     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Test imports using full venv path to avoid numpy source directory issues
+cd "$SCRIPT_DIR"  # Ensure we're not in numpy source directory
 "$VENV_PATH/bin/python3" -c "import json; import numpy; import cv2; print(''); print('  ✓ json: OK'); print('  ✓ numpy: OK'); print('  ✓ cv2 (OpenCV): OK'); print('')" 2>/dev/null
 
 if [ $? -ne 0 ]; then
     echo "⚠ Warning: Some modules failed to import. Checking individually..."
     "$VENV_PATH/bin/python3" -c "import json" 2>/dev/null && echo "  ✓ json available" || echo "  ✗ json NOT available"
-    "$VENV_PATH/bin/python3" -c "import numpy" 2>/dev/null && echo "  ✓ numpy available" || echo "  ✗ numpy NOT available - Try: pip install numpy"
+    "$VENV_PATH/bin/python3" -c "import sys; import numpy" 2>/dev/null && echo "  ✓ numpy available" || echo "  ✗ numpy NOT available or import error - Try: $VENV_PATH/bin/pip install --force-reinstall numpy"
     "$VENV_PATH/bin/python3" -c "import cv2" 2>/dev/null && echo "  ✓ cv2 available" || echo "  ✗ cv2 NOT available - Try: pip install opencv-python"
     exit 1
 fi
@@ -212,12 +215,13 @@ if [ -z "$XAUTHORITY" ]; then
 fi
 
 export QT_QPA_PLATFORM=xcb
-# QT plugin path for PySide2 (will work from venv)
-if [ -d ".venv/lib/python*/site-packages/PySide2/Qt/plugins" ]; then
-    export QT_QPA_PLATFORM_PLUGIN_PATH=".venv/lib/python*/site-packages/PySide2/Qt/plugins"
+# QT plugin path for PyQt5 (will work from venv)
+if [ -d ".venv/lib/python*/site-packages/PyQt5/Qt/plugins" ]; then
+    export QT_QPA_PLATFORM_PLUGIN_PATH=".venv/lib/python*/site-packages/PyQt5/Qt/plugins"
 fi
 
-python3 triangle_detector_app_CV.py
+# Use explicit venv Python path to avoid numpy import errors from system Python
+.venv/bin/python3 triangle_detector_app_CV.py
 EOF
 
 chmod +x "$RUN_SCRIPT"
