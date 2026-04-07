@@ -1,102 +1,499 @@
-# MHSF Triangle Detector - Installation & Auto-Boot Setup
+# MHSF Triangle Detector - Installation Guide
 
-Complete guide to install the triangle detection application on Raspberry Pi and configure it to run on boot.
-
-## Quick Start (10 minutes)
-
-### 1. On Raspberry Pi Terminal
-```bash
-cd ~/MHSF_Guide
-bash setup.sh
-```
-
-Click "Enable auto-start on boot?" when prompted (recommended).
-
-### 2. Verify Installation
-```bash
-bash run_detector.sh
-```
-
-The app should launch in fullscreen. Press **Ctrl+C** to stop.
+Complete installation and setup guide for desktop systems and Raspberry Pi 5 with **auto-start on reboot configuration**.
 
 ---
 
-## Detailed Installation
+## 🚀 Quick Start (5 minutes)
+
+### For Windows/Mac/Linux Desktop
+```bash
+# Install dependencies
+pip install PySide6 opencv-python numpy
+
+# Run application
+python3 triangle_detector_app_CV.py
+```
+
+### For Raspberry Pi 5 (with auto-start)
+```bash
+cd ~/MHSF_Guide
+sudo bash setup.sh
+```
+
+Then reboot: `sudo reboot`
+
+The app will start automatically when Pi boots.
+
+---
+
+## 💻 Detailed Installation
 
 ### Prerequisites
-- Raspberry Pi 4 (8GB) or Pi 5 with Raspberry Pi OS
-- USB camera connected
-- Monitor/display connected (or X11 forwarding)
-- Internet connection for downloading packages
 
-### Step 1: Download & Navigate
+#### For Desktop (Windows/Mac/Linux)
+- Python 3.8 or higher
+- pip package manager
+- USB camera
+- Terminal/Command prompt access
+
+#### For Raspberry Pi 5
+- Raspberry Pi 5 (recommended 8GB RAM)
+- Raspberry Pi OS (Bookworm or newer)
+- USB camera connected
+- HDMI monitor/display connected
+- Internet connection
+- microSD card with at least 4GB free space
+
+### Step 0: Verify Python Installation
+
 ```bash
-cd ~/
-# If you haven't cloned yet:
+python3 --version
+# Should show Python 3.8 or higher
+```
+
+If Python not installed:
+- **Windows**: Download from [python.org](https://www.python.org)
+- **macOS**: `brew install python3`
+- **Linux**: `sudo apt-get install python3 python3-pip`
+- **Raspberry Pi**: Already included with Raspberry Pi OS
+
+---
+
+## 📦 Installation Methods
+
+### Method 1: Automated Setup (Recommended for Pi5)
+
+This fully automated script handles all dependencies and systemd configuration.
+
+#### 1a. Download Project
+```bash
+cd ~
 git clone <your-repo-url> MHSF_Guide
 cd MHSF_Guide
 ```
 
-### Step 2: Run Setup Script
+Or if already downloaded:
+```bash
+cd ~/MHSF_Guide
+```
+
+#### 1b. Run Setup Script
+
+**Without Auto-Start (Desktop):**
 ```bash
 bash setup.sh
 ```
 
-**What this does:**
-✓ Checks Python 3 installation  
-✓ Updates pip package manager  
-✓ Installs PySide6, OpenCV, NumPy  
-✓ Creates systemd service file  
-✓ Sets up auto-boot configuration  
-
-**Output:** Should show green checkmarks (✓) for each step.
-
-### Step 3: Manual Service Installation (if not run as sudo)
-
-If the setup script was run without `sudo`, manually install the service:
-
+**With Auto-Start on Reboot (Raspberry Pi 5):**
 ```bash
-sudo cp triangle-detector.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable triangle-detector.service
+sudo bash setup.sh
 ```
 
-Verify:
+**What the script does:**
+- ✅ Step [1/6]: Verifies Python 3 installation
+- ✅ Step [2/6]: **Installs system libraries for Pi5** (Qt, OpenGL, X11)
+- ✅ Step [3/6]: Updates pip with setuptools & wheel
+- ✅ Step [4/6]: Installs Python packages (PySide6, OpenCV, NumPy)
+- ✅ Step [5/6]: Creates systemd service file for auto-start
+- ✅ Step [6/6]: Creates convenient run wrapper script
+
+**Expected output:**
+```
+================================
+MHSF Triangle Detector - Setup
+Pi5 Edition with Auto-Start
+================================
+[1/6] Checking Python installation...
+✓ Found: Python 3.11.x
+[2/6] Installing system dependencies for Pi5...
+     Installing Qt libraries, OpenGL support...
+✓ System dependencies installed
+[3/6] Updating pip...
+✓ pip updated
+[4/6] Installing Python dependencies...
+✓ Core dependencies installed
+[5/6] Creating systemd service for auto-start...
+✓ Systemd service created: /etc/systemd/system/triangle-detector.service
+✓ Service enabled for auto-start on reboot
+[6/6] Creating run wrapper script...
+✓ Wrapper script created: /home/pi/MHSF_Guide/run_detector.sh
+
+================================
+Setup Complete!
+================================
+
+3. Systemd Service (auto-start on reboot):
+   Status:  sudo systemctl status triangle-detector
+   Start:   sudo systemctl start triangle-detector
+   Stop:    sudo systemctl stop triangle-detector
+   Restart: sudo systemctl restart triangle-detector
+
+Logs:
+   Real-time: sudo journalctl -u triangle-detector -f
+   Recent:    sudo journalctl -u triangle-detector -n 50
+
+✓ AUTO-START ON REBOOT CONFIGURED
+```
+
+#### 1c. Test Installation
+
+Test the service immediately (without reboot):
 ```bash
-sudo systemctl status triangle-detector.service
+sudo systemctl start triangle-detector
+
+# In another terminal, check logs:
+journalctl -u triangle-detector -f
+
+# You should see the app launching
+```
+
+Stop for testing:
+```bash
+sudo systemctl stop triangle-detector
+```
+
+#### 1d. Verify Auto-Start on Reboot
+```bash
+sudo reboot
+# App will start automatically after boot
 ```
 
 ---
 
-## Running the Application
+### Method 2: Manual Installation (Desktop)
 
-### Option 1: Direct Python Execution
+For desktop systems that don't need auto-start:
+
+#### 2a. Create Virtual Environment (Optional but Recommended)
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### 2b. Install Dependencies
+```bash
+pip install --upgrade pip setuptools wheel
+pip install PySide6 opencv-python numpy
+```
+
+#### 2c. Run Application
 ```bash
 python3 triangle_detector_app_CV.py
 ```
 
-### Option 2: Using Wrapper Script
+---
+
+### Method 3: Manual Systemd Setup (If Auto-Script Failed)
+
+If `setup.sh` with sudo encountered issues:
+
+#### 3a. Install Dependencies Manually
+```bash
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-dev \
+    libgl1-mesa-glx libxkbcommon-x11-0 libdbus-1-3 \
+    libfontconfig1 libfreetype6 libx11-6 libxcb1 \
+    libwayland-client0
+
+python3 -m pip install --upgrade pip
+python3 -m pip install PySide6 opencv-python numpy
+```
+
+#### 3b. Create Service File Manually
+```bash
+sudo nano /etc/systemd/system/triangle-detector.service
+```
+
+Paste:
+```ini
+[Unit]
+Description=MHSF Triangle Detector Application
+After=network-online.target display-manager.service
+Wants=display-manager.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+Environment="DISPLAY=:0"
+Environment="XAUTHORITY=/home/pi/.Xauthority"
+Environment="QT_QPA_PLATFORM=xcb"
+Environment="QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/plugins"
+Environment="LD_LIBRARY_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/lib:/usr/lib/arm-linux-gnueabihf:/usr/local/lib:$LD_LIBRARY_PATH"
+Environment="HOME=/home/pi"
+WorkingDirectory=/home/pi/MHSF_Guide
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/bin/python3 /home/pi/MHSF_Guide/triangle_detector_app_CV.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=triangle-detector
+
+[Install]
+WantedBy=graphical.target
+```
+
+Press `Ctrl+O`, `Enter`, `Ctrl+X` to save.
+
+#### 3c. Enable Service
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable triangle-detector.service
+sudo systemctl start triangle-detector.service
+```
+
+---
+
+## ▶️ Running the Application
+
+### Option 1: Direct Python (Desktop & Pi)
+```bash
+python3 triangle_detector_app_CV.py
+```
+
+### Option 2: Using Wrapper Script (Desktop & Pi)
 ```bash
 bash run_detector.sh
 ```
 
-### Option 3: Starting as Service (if configured)
+### Option 3: Systemd Service (Pi5 Only)
+
+**Start:**
 ```bash
-# Start
 sudo systemctl start triangle-detector
-
-# Stop
-sudo systemctl stop triangle-detector
-
-# Check status
-sudo systemctl status triangle-detector
-
-# View logs
-journalctl -u triangle-detector -f
-
-# Disable auto-boot
-sudo systemctl disable triangle-detector
 ```
+
+**Stop:**
+```bash
+sudo systemctl stop triangle-detector
+```
+
+**Check Status:**
+```bash
+sudo systemctl status triangle-detector
+```
+
+**View Real-Time Logs:**
+```bash
+journalctl -u triangle-detector -f
+```
+
+**View Recent Logs:**
+```bash
+journalctl -u triangle-detector -n 50
+```
+
+**Restart:**
+```bash
+sudo systemctl restart triangle-detector
+```
+
+### Option 4: Enable/Disable Auto-Start
+
+**Enable (auto-start on reboot):**
+```bash
+sudo systemctl enable triangle-detector.service
+```
+
+**Disable (don't auto-start):**
+```bash
+sudo systemctl disable triangle-detector.service
+```
+
+**Current Status:**
+```bash
+systemctl is-enabled triangle-detector.service
+# Returns: enabled or disabled
+```
+
+---
+
+## ⚙️ System Requirements Recap
+
+### Disk Space
+- Raspberry Pi OS: ~3GB
+- Dependencies: ~500MB
+- MHSF Guide project: ~20MB
+- **Total: 4GB minimum** recommended
+
+### RAM
+- Minimum: 512MB (app only uses ~100-200MB)
+- Recommended: 2GB+ for smooth operation
+- Pi5 8GB: Overkill but recommended for reliability
+
+### Network
+- Internet needed only during installation for packages
+- Can run offline after dependencies installed
+
+---
+
+## 🔧 Configuration
+
+### First Time Launch
+
+GUI defaults:
+- Camera: Auto-detect first camera
+- Resolution: 320x480
+- Distance Threshold: 15 pixels
+- Min Area: 10 pixels²
+- Fullscreen: OFF
+
+### Saving Custom Settings
+
+1. Adjust sliders in GUI
+2. Click "Save Config" button
+3. Settings saved to `triangle_config.json`
+
+Settings auto-load on restart.
+
+### Edit Configuration Directly
+
+Edit `triangle_config.json`:
+```json
+{
+    "distance_threshold": 15,
+    "min_triangle_area": 10,
+    "resolution": [320, 480],
+    "camera_id": 0,
+    "fullscreen_mode": false
+}
+```
+
+---
+
+## 🐛 Troubleshooting
+
+### Issue: No Module Named PySide6
+
+**Solution:**
+```bash
+pip install PySide6
+```
+
+Or with setup.sh:
+```bash
+sudo bash setup.sh
+```
+
+### Issue: No Camera Detected
+
+**Check camera connection:**
+```bash
+# Linux/Pi
+ls /dev/video*
+v4l2-ctl --list-devices
+
+# Windows
+# Check Device Manager → Cameras
+
+# macOS
+# System Settings → Privacy & Security → Camera
+```
+
+**Test camera:**
+```bash
+python3 -c "import cv2; cap = cv2.VideoCapture(0); print('Camera OK' if cap.isOpened() else 'Camera FAILED')"
+```
+
+### Issue: GUI Not Displaying (Headless Pi)
+
+**Enable X11 Forwarding:**
+```bash
+ssh -X user@raspberrypi.local
+python3 triangle_detector_app_CV.py
+```
+
+**Or use Remote Desktop:**
+- Enable VNC on Pi: `sudo raspi-config` → Interfacing Options → VNC
+- Connect via VNC from another machine
+
+### Issue: Service Won't Start
+
+**Check logs:**
+```bash
+journalctl -u triangle-detector -f
+```
+
+**Common issues:**
+- DISPLAY=:0 not available (display not connected)
+- User `pi` doesn't exist (check username)
+- Permissions issue (use `sudo`)
+
+**Solution:**
+```bash
+# Ensure DISPLAY is set
+echo $DISPLAY
+
+# If empty, set manually:
+export DISPLAY=:0
+sudo systemctl restart triangle-detector
+```
+
+### Issue: Low FPS Performance
+
+**Increase Canny thresholds** (edit `triangle_detector_app_CV.py`):
+```python
+self.threshold1 = 100  # was 80
+self.threshold2 = 220  # was 200
+```
+
+**Reduce minimum area:**
+Adjust "Min Area" slider to higher value via GUI
+
+**Close background apps:**
+```bash
+killall firefox chromium gedit
+```
+
+### Issue: Permissions Denied on Service File
+
+**Solution:**
+```bash
+sudo chown pi:pi /etc/systemd/system/triangle-detector.service
+sudo chmod 644 /etc/systemd/system/triangle-detector.service
+```
+
+---
+
+## 📊 Verification Checklist
+
+After installation, verify each step:
+
+- [ ] Python 3.8+ installed: `python3 --version`
+- [ ] pip working: `pip --version`
+- [ ] PySide6 installed: `python3 -c "import PySide6; print('OK')"`
+- [ ] OpenCV installed: `python3 -c "import cv2; print('OK')"`
+- [ ] NumPy installed: `python3 -c "import numpy; print('OK')"`
+- [ ] Camera detected: `python3 -c "import cv2; print(cv2.VideoCapture(0).isOpened())"`
+- [ ] App launches: `python3 triangle_detector_app_CV.py`
+- [ ] Service enabled (Pi): `systemctl is-enabled triangle-detector.service`
+- [ ] Service starts (Pi): `sudo systemctl start triangle-detector`
+- [ ] Logs available (Pi): `journalctl -u triangle-detector | head -5`
+
+✅ All checked? **Installation complete!**
+
+---
+
+## 📞 Support Resources
+
+| Issue | Resource |
+|-------|----------|
+| General questions | See README.md |
+| Technical details | See concept.md |
+| Configuration | Edit triangle_config.json or use GUI |
+| Performance | Check logs: `journalctl -u triangle-detector -f` |
+| Camera issues | Run test: `python3 -c "import cv2; cap = cv2.VideoCapture(0); print(cap.isOpened())"` |
+
+---
+
+**Status**: ✅ Ready for Production | **Last Updated**: April 2026
 
 ---
 

@@ -1,53 +1,252 @@
 # MHSF Triangle Detector
 
-Real-time triangle detection application using USB camera stream with PySide6 GUI and OpenCV computer vision.
+Professional real-time triangle detection application using USB camera with **angle validation**, GUI feedback system, and **optimized background processing** for Raspberry Pi 5.
 
-## Features
+## 🎯 Project Overview
 
-✅ **Real-time Triangle Detection**
-- Detects triangles from USB camera stream (320x480 @ 30fps)
-- Uses OpenCV contour analysis for efficient detection
-- Adjustable minimum area threshold to detect small/large triangles
+MHSF Triangle Detector is a computer vision application designed for **precision triangle detection and positioning** in manufacturing, assembly, and quality control environments. The app captures USB camera streams, detects triangles with angle constraints, evaluates positioning accuracy, and provides visual status feedback.
 
-✅ **Visual Feedback**
-- Green vertical center line reference
-- Blue bounding boxes around detected triangles
-- Red center points marking triangle centroids
-- Status indicator ("OK" / "Wait") at top-right corner
+**Perfect for:**
+- Assembly line triangle component detection
+- Quality control positioning verification  
+- Manufacturing equipment calibration
+- Educational computer vision projects
 
-✅ **Positioning Alignment**
-- Measures horizontal distance from triangle center to screen center
-- Shows "OK" (green) when within distance threshold
-- Shows "Wait" (red) when outside threshold
-- Useful for assembly line or positioning applications
+## ✨ Key Features
 
-✅ **Configurable Parameters**
-- **Distance Threshold**: 10-300 pixels (how close to center)
-- **Minimum Area**: 1-5000 pixels² (triangle size filter)
-- All settings persist in `triangle_config.json`
+### 🔍 **Advanced Triangle Detection**
+- **Angle Constraints**: Detects only triangles where ALL angles are 50-70° (equilateral/near-equilateral)
+- **Real-time Processing**: 30 FPS camera capture with background detection thread
+- **Multi-shape Support**: Detects perfect triangles (3 vertices) and rounded-corner triangles (4-5 vertices)
+- **Area Filtering**: Adjustable minimum area threshold (1-5000 px²) to ignore small noise
 
-✅ **Multi-Camera Support**
-- Auto-detect available USB cameras
-- Switch between cameras via dropdown menu
-- Hot-swap camera without restarting
+### 📊 **Visual Feedback System**
+- **Center Reference Lines**: Green center line + yellow threshold boundaries
+- **Detection Visualization**: Blue contours around detected triangles, red center points (centroids)
+- **Dual Status Indicators**:
+  - **OK (Green)**: Triangle within distance threshold for 2+ consecutive frames
+  - **Wait (Red)**: Triangle outside threshold or no detection for 10+ frames
+- **Real-time FPS Display**: Shows actual processing frame rate
 
-✅ **Fullscreen Mode**
-- Launches in fullscreen for kiosk/production use
-- Press ESC to exit fullscreen
+### 🎯 **Positioning Alignment**
+- **Distance Threshold**: Configurable 10-300 pixel range from screen center
+- **Hysteresis Logic**: Prevents flickering between OK/Wait states with frame counting
+- **Visual Zone Markers**: Yellow lines show acceptance zone boundaries
 
-## System Requirements
+### ⚙️ **Configurable Controls**
+- **Distance Threshold**: How close triangle must be to center line (pixels)
+- **Min Triangle Area**: Filter small noise contours
+- **Angle Range**: Predefined 50-70° (customizable in code)
+- All settings saved to `triangle_config.json` automatically
 
-- **Python**: 3.8+
-- **OS**: Windows, macOS, Linux
-- **Camera**: USB webcam or compatible camera
-- **Display**: Any resolution (scaled automatically)
+### 📷 **Multi-Camera Support**
+- Auto-detect USB cameras (supports 1-10 cameras)
+- Live camera switching via dropdown menu
+- No restart required for camera changes
 
-## Installation
+### 🖥️ **Display Options**
+- Windowed mode (default)
+- Fullscreen mode (toggle via button)
+- Maximized window option
+- Ideal for kiosk/production displays
 
-### 1. Clone or Download Project
-```bash
-cd d:\Dev_AI_env\MHSF_Guide
+### 🎬 **Performance Optimized**
+- **Background Detection Thread**: Camera frames display at full 30 FPS while detection runs in background
+- **Non-blocking UI**: Never freezes during heavy processing
+- **Max FPS Capped**: 60 FPS max per frame limit configuration
+- **Smooth Real-time Operation**: Perfect for live monitoring
+
+## 🏗️ System Architecture
+
 ```
+Camera Input (30 FPS)
+        ↓
+▁▁▁▁▁▁▁▁▁▁▁▁▁▁ Main UI Thread
+│ Frame Display  │ Status Update
+│ Status Update  │ FPS Display
+│ Camera Control │
+▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+        ↓ (via signal)
+    Detection Results
+        ↑
+▁▁▁▁▁▁▁▁▁▁▁▁▁▁ Background Detection Thread
+│ Grayscale Conv │
+│ Edge Detection │
+│ Contour Find   │
+│ Angle Calc     │
+│ Validate Tri   │
+▔▔▔▔▔▔▔▔▔▔▔▔▔▔
+```
+
+## 💻 System Requirements
+
+### Minimum
+- **Python**: 3.8+
+- **RAM**: 512MB
+- **Storage**: 100MB free
+- **Camera**: USB webcam or compatible camera
+
+### Recommended for Pi5 Auto-Start
+- **Raspberry Pi 5** (8GB)
+- **Raspberry Pi OS** (Bookworm)
+- **Display**: HDMI connected
+- **Internet**: For package installation
+
+## 📦 Dependencies
+
+- **PySide6**: Qt6 GUI framework
+- **OpenCV (cv2)**: Computer vision & image processing
+- **NumPy**: Numeric computations
+- **Python 3.8+** standard libraries (json, time, threading, etc.)
+
+## 📂 Project Structure
+
+```
+MHSF_Guide/
+├── triangle_detector_app_CV.py    # Main application
+├── setup.sh                        # Automated installation script
+├── run_detector.sh                 # Quick run wrapper
+├── triangle_config.json            # User settings (auto-created)
+├── triangle-detector.service       # Systemd service file
+├── README.md                        # This file
+├── INSTALL_INSTRUCTIONS.md         # Installation guide
+└── concept.md                       # Technical documentation
+```
+
+## 🚀 Quick Start
+
+### Windows/Mac/Linux Desktop
+```bash
+python3 triangle_detector_app_CV.py
+```
+
+### Raspberry Pi (with auto-start on boot)
+```bash
+sudo bash setup.sh
+```
+
+See [INSTALL_INSTRUCTIONS.md](INSTALL_INSTRUCTIONS.md) for detailed setup.
+
+## ⚙️ Configuration
+
+Edit `triangle_config.json` or use GUI controls:
+
+```json
+{
+    "distance_threshold": 15,      // pixels from center line
+    "min_triangle_area": 10,        // minimum area in pixels²
+    "resolution": [320, 480],       // camera capture size
+    "camera_id": 0,                 // default camera (0=first)
+    "fullscreen_mode": false        // gui startup mode
+}
+```
+
+## 🎮 Controls
+
+| Button/Key | Function |
+|-----------|----------|
+| **Distance Threshold Slider** | Adjust acceptance zone (10-300px) |
+| **Min Area Spinner** | Filter small noise (1-5000px²) |
+| **Camera Dropdown** | Switch active camera |
+| **Save Config** | Persist settings to JSON |
+| **Fullscreen Toggle** | Switch display mode |
+| **ESC** | Exit fullscreen mode |
+
+## 📊 Output Information
+
+### Visual Elements
+- **Green Line**: Vertical screen center reference
+- **Yellow Lines**: Left/right distance threshold boundaries  
+- **Blue Contours**: Detected triangle outlines
+- **Red Circles**: Triangle centroids (center points)
+- **Status Box** (top-right): OK/Wait indicator
+- **FPS Counter** (top-right): Real-time frame rate
+
+### Configuration File Output
+- Location: `triangle_config.json`
+- Auto-saved when "Save Config" clicked
+- Auto-loaded on application startup
+- Includes camera, thresholds, and display preferences
+
+## 🔧 Troubleshooting
+
+### No Camera Detected
+- Check USB camera is connected
+- Try different USB ports
+- Run: `ls /dev/video*` (Linux) or check Device Manager (Windows)
+- Verify camera permissions
+
+### GUI Not Displaying (Headless)
+- Configure X11 forwarding: `ssh -X user@pi`
+- Or set `QT_QPA_PLATFORM=offscreen` for background mode
+
+### Low FPS (<20)
+- Reduce minimum area threshold
+- Increase Canny edge detection thresholds (code modification)
+- Close other applications
+
+### Service Won't Auto-Start
+- Check status: `systemctl status triangle-detector`
+- View logs: `journalctl -u triangle-detector -f`
+- Verify DISPLAY=:0 is available
+- Ensure run with `sudo bash setup.sh`
+
+## 📖 Advanced Usage
+
+### Custom Angle Range
+Edit in `triangle_detector_app_CV.py`:
+```python
+self.min_angle = 50  # Minimum angle in degrees
+self.max_angle = 70  # Maximum angle in degrees
+```
+
+### Adjust Edge Detection
+```python
+self.threshold1 = 80   # Lower threshold (was 50)
+self.threshold2 = 200  # Upper threshold (was 150)
+```
+
+### Enable Verbose Logging
+Run with verbose output:
+```bash
+python3 triangle_detector_app_CV.py --debug
+```
+
+## 🔄 Version History
+
+**v1.0** (Current)
+- ✅ Real-time triangle detection with angle constraints
+- ✅ Background detection thread for smooth 30 FPS display
+- ✅ Raspberry Pi 5 auto-start on reboot
+- ✅ Multi-camera support
+- ✅ Hysteresis-based status indication
+- ✅ Full configuration persistence
+
+## 📝 License
+
+[Specify your license here]
+
+## 👥 Authors
+
+- **Development**: MHSF Project Team
+- **Computer Vision**: OpenCV implementation
+- **GUI**: PySide6 framework
+- **Platform**: Raspberry Pi 5 optimized
+
+## 🤝 Contributing
+
+Bug reports and feature requests welcome!
+
+## 📞 Support
+
+For issues or questions, consult:
+1. [INSTALL_INSTRUCTIONS.md](INSTALL_INSTRUCTIONS.md) - Setup help
+2. [concept.md](concept.md) - Technical details
+3. Application logs: `journalctl -u triangle-detector -f`
+
+---
+
+**Status**: ✅ Production Ready | **Last Updated**: April 2026
 
 ### 2. Install Dependencies
 ```bash

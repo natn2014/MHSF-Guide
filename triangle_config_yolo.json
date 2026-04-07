@@ -1,0 +1,9 @@
+{
+    "distance_threshold": 15,
+    "confidence_threshold": 0.1,
+    "resolution": [
+        320,
+        480
+    ],
+    "camera_id": 1
+}

@@ -7,6 +7,7 @@ from PySide6.QtGui import QImage, QPixmap, QFont, QColor
 from PySide6.QtCore import QTimer, Qt, QThread, Signal, QRect, QSize
 import json
 import os
+import time
 
 class VideoDisplayWidget(QWidget):
     """Container widget that overlays UI elements on video"""
@@ -29,10 +30,20 @@ class VideoDisplayWidget(QWidget):
         
         self.setLayout(layout)
         
-        # Vertical center line
+        # Vertical center line (green)
         self.line_widget = QFrame(self)
         self.line_widget.setStyleSheet("background-color: lime; border: none;")
         self.line_widget.setGeometry(239, 0, 2, 320)
+        
+        # Left offset line (yellow)
+        self.left_line_widget = QFrame(self)
+        self.left_line_widget.setStyleSheet("background-color: yellow; border: none;")
+        self.left_line_widget.setGeometry(224, 0, 2, 320)  # Default: center - 15
+        
+        # Right offset line (yellow)
+        self.right_line_widget = QFrame(self)
+        self.right_line_widget.setStyleSheet("background-color: yellow; border: none;")
+        self.right_line_widget.setGeometry(254, 0, 2, 320)  # Default: center + 15
         
         # Status label
         self.status_label = QLabel(self)
@@ -44,6 +55,16 @@ class VideoDisplayWidget(QWidget):
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.adjustSize()
         self.update_status_position()
+        
+        # FPS label (top right)
+        self.fps_label = QLabel(self)
+        self.fps_label.setStyleSheet(
+            "background-color: rgba(0, 0, 0, 180); color: #00FF00; font-weight: bold; "
+            "font-size: 12px; padding: 3px 8px; border-radius: 3px; font-family: 'Courier';"
+        )
+        self.fps_label.setText("FPS: 0.0")
+        self.fps_label.setAlignment(Qt.AlignCenter)
+        self.update_fps_position()
     
     def update_status_position(self):
         """Position status label at top right"""
@@ -51,6 +72,27 @@ class VideoDisplayWidget(QWidget):
         x = 480 - self.status_label.width() - 10
         y = 10
         self.status_label.setGeometry(x, y, self.status_label.width(), self.status_label.height())
+    
+    def update_fps_position(self):
+        """Position FPS label at top right, below status"""
+        self.fps_label.adjustSize()
+        x = 480 - self.fps_label.width() - 10
+        y = 50  # Below status label
+        self.fps_label.setGeometry(x, y, self.fps_label.width(), self.fps_label.height())
+    
+    def set_fps(self, fps):
+        """Update FPS label"""
+        self.fps_label.setText(f"FPS: {fps:.1f}")
+        self.update_fps_position()
+    
+    def update_offset_lines(self, distance_threshold):
+        """Update position of yellow offset lines based on distance_threshold"""
+        center_x = 239  # Center of 480px width
+        left_x = max(0, center_x - distance_threshold)
+        right_x = min(478, center_x + distance_threshold)  # 478 to keep line within bounds
+        
+        self.left_line_widget.setGeometry(left_x, 0, 2, 320)
+        self.right_line_widget.setGeometry(right_x, 0, 2, 320)
     
     def set_status(self, status, is_ok=False):
         """Update status label"""
@@ -86,7 +128,7 @@ class CameraWorker(QThread):
             self.cap = cv2.VideoCapture(self.camera_id)
             self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
             self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-            self.cap.set(cv2.CAP_PROP_FPS, 30)
+            self.cap.set(cv2.CAP_PROP_FPS, 60)
             
             # Check if camera opened successfully
             if not self.cap.isOpened():
@@ -115,14 +157,109 @@ class CameraWorker(QThread):
         self.cap = cv2.VideoCapture(camera_id)
 
 
+class DetectionWorker(QThread):
+    """Worker thread for triangle detection to prevent blocking UI"""
+    detection_ready = Signal(list, object)  # Emits (triangles, latest_triangle)
+    
+    def __init__(self, detector):
+        super().__init__()
+        self.running = True
+        self.detector = detector
+        self.current_frame = None
+        self.frame_lock = False
+        
+    def set_frame(self, frame):
+        """Set frame for detection"""
+        self.current_frame = frame.copy()
+        self.frame_lock = False
+    
+    def run(self):
+        while self.running:
+            if self.current_frame is not None and not self.frame_lock:
+                self.frame_lock = True
+                frame = self.current_frame
+                
+                # Perform detection on this thread
+                triangles = self.detector.detect_triangles(frame)
+                latest_triangle = self.detector.get_largest_triangle(triangles)
+                
+                # Emit results back to main thread
+                self.detection_ready.emit(triangles, latest_triangle)
+            else:
+                # Small sleep to prevent CPU spinning
+                self.msleep(1)
+    
+    def stop(self):
+        self.running = False
+        self.wait()
+
+
 class TriangleDetector:
     def __init__(self):
         self.threshold1 = 50
         self.threshold2 = 150
         self.min_area = 10  # Minimum triangle area in pixels
+        self.min_angle = 50  # Minimum angle in degrees
+        self.max_angle = 70  # Maximum angle in degrees
+    
+    def calculate_angles(self, points):
+        """Calculate angles (in degrees) from three triangle vertices"""
+        if len(points) != 3:
+            return None
         
+        p1, p2, p3 = [tuple(p[0]) for p in points]
+        
+        # Calculate vectors for each angle
+        # Angle at p1
+        v1_a = np.array(p2) - np.array(p1)
+        v1_b = np.array(p3) - np.array(p1)
+        angle1 = self.angle_between_vectors(v1_a, v1_b)
+        
+        # Angle at p2
+        v2_a = np.array(p1) - np.array(p2)
+        v2_b = np.array(p3) - np.array(p2)
+        angle2 = self.angle_between_vectors(v2_a, v2_b)
+        
+        # Angle at p3
+        v3_a = np.array(p1) - np.array(p3)
+        v3_b = np.array(p2) - np.array(p3)
+        angle3 = self.angle_between_vectors(v3_a, v3_b)
+        
+        return [angle1, angle2, angle3]
+    
+    def angle_between_vectors(self, v1, v2):
+        """Calculate angle (in degrees) between two vectors"""
+        cos_angle = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2) + 1e-8)
+        cos_angle = np.clip(cos_angle, -1.0, 1.0)
+        angle_rad = np.arccos(cos_angle)
+        angle_deg = np.degrees(angle_rad)
+        return angle_deg
+    
+    def is_valid_angle_range(self, angles):
+        """Check if all angles are within the valid range (50-70 degrees)"""
+        if angles is None or len(angles) != 3:
+            return False
+        return all(self.min_angle <= angle <= self.max_angle for angle in angles)
+        
+    def is_triangle_like(self, approx, hull):
+        """Check if approximation or hull is triangle-like (3 main corners with valid angles)"""
+        # Accept exact triangles (3 vertices) with valid angles
+        if len(approx) == 3:
+            angles = self.calculate_angles(approx)
+            if self.is_valid_angle_range(angles):
+                return True
+        
+        # Accept shapes with 4-5 vertices if convex hull is triangle with valid angles
+        # (indicates rounded corners)
+        if len(hull) == 3 and 3 <= len(approx) <= 5:
+            angles = self.calculate_angles(hull)
+            if self.is_valid_angle_range(angles):
+                return True
+        
+        return False
+    
     def detect_triangles(self, frame):
-        """Detect triangles using contour analysis"""
+        """Detect triangles using contour analysis (including rounded corners)"""
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         blurred = cv2.GaussianBlur(gray, (5, 5), 0)
         edges = cv2.Canny(blurred, self.threshold1, self.threshold2)
@@ -131,11 +268,26 @@ class TriangleDetector:
         
         triangles = []
         for contour in contours:
-            approx = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
             area = cv2.contourArea(contour)
             
-            # Filter: 3 vertices = triangle, minimum area
-            if len(approx) == 3 and area > self.min_area:
+            # Skip small contours
+            if area <= self.min_area:
+                continue
+            
+            # Get convex hull to detect fundamental shape
+            hull = cv2.convexHull(contour)
+            
+            # Try strict approximation first (perfect triangles)
+            approx_strict = cv2.approxPolyDP(contour, 0.02 * cv2.arcLength(contour, True), True)
+            
+            # Try lenient approximation (rounded corners)
+            approx_lenient = cv2.approxPolyDP(contour, 0.05 * cv2.arcLength(contour, True), True)
+            
+            # Use strict first, fall back to lenient
+            approx = approx_strict if len(approx_strict) <= 5 else approx_lenient
+            
+            # Check if it's triangle-like
+            if self.is_triangle_like(approx, hull):
                 # Calculate centroid
                 M = cv2.moments(contour)
                 if M["m00"] != 0:
@@ -160,12 +312,12 @@ class TriangleDetectorApp(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("MHSF Triangle Detector")
-        self.setWindowState(Qt.WindowMaximized)
         
         # Configuration
         self.config_file = "triangle_config.json"
         self.distance_threshold = 15  # pixels
         self.min_triangle_area = 10  # pixels
+        self.fullscreen_mode = False  # Default to windowed mode
         self.load_config()
         
         # Initialize detector
@@ -175,11 +327,37 @@ class TriangleDetectorApp(QWidget):
         self.triangles = []
         self.latest_triangle = None
         
+        # Status stability counters
+        self.ok_frame_count = 0  # Frames with triangle within threshold
+        self.wait_frame_count = 0  # Frames without triangle or outside threshold
+        self.ok_threshold = 2  # Need 2 consecutive frames to show OK
+        self.wait_threshold = 10  # Need 10 consecutive frames to show Wait
+        self.current_status = "Wait"  # Start with Wait
+        
+        # FPS tracking
+        self.frame_times = []
+        self.fps = 0
+        self.frame_start_time = time.time()
+        self.max_fps = 60
+        self.frame_interval = 1.0 / self.max_fps
+        self.last_frame_time = 0
+        
         # Camera worker
         self.camera_worker = None
         
+        # Detection worker (separate thread for processing)
+        self.detection_worker = DetectionWorker(self.detector)
+        self.detection_worker.detection_ready.connect(self.on_detection_ready)
+        self.detection_worker.start()
+        
         # Setup UI
         self.init_ui()
+        
+        # Apply window state (windowed by default, or fullscreen if saved)
+        if self.fullscreen_mode:
+            self.showFullScreen()
+        else:
+            self.setWindowState(Qt.WindowMaximized)
         
         # Start camera
         self.start_camera(0)
@@ -227,6 +405,9 @@ class TriangleDetectorApp(QWidget):
         video_container.addStretch()
         main_layout.addLayout(video_container)
         
+        # Initialize offset lines with current distance threshold
+        self.video_display.update_offset_lines(self.distance_threshold)
+        
         # Control panel - Distance threshold and Min Area
         control_layout = QHBoxLayout()
         control_layout.addWidget(QLabel("Distance Threshold (px):"))
@@ -251,6 +432,13 @@ class TriangleDetectorApp(QWidget):
         save_btn = QPushButton("Save Config")
         save_btn.clicked.connect(self.save_config)
         control_layout.addWidget(save_btn)
+        
+        # Fullscreen toggle button
+        self.fullscreen_btn = QPushButton("Fullscreen: OFF")
+        self.fullscreen_btn.setMaximumWidth(120)
+        self.fullscreen_btn.clicked.connect(self.toggle_fullscreen)
+        control_layout.addWidget(self.fullscreen_btn)
+        
         control_layout.setAlignment(Qt.AlignCenter)
         
         main_layout.addLayout(control_layout)
@@ -279,18 +467,38 @@ class TriangleDetectorApp(QWidget):
         print(f"ERROR: {error_msg}")
     
     def process_frame(self, frame):
-        """Process camera frame"""
+        """Receive camera frame and pass to detection worker"""
+        # Enforce maximum FPS
+        current_time = time.time()
+        time_since_last_frame = current_time - self.last_frame_time
+        
+        if time_since_last_frame < self.frame_interval:
+            return  # Skip this frame to maintain max FPS
+        
+        self.last_frame_time = current_time
         self.current_frame = frame.copy()
         
-        # Detect triangles
-        self.triangles = self.detector.detect_triangles(frame)
-        self.latest_triangle = self.detector.get_largest_triangle(self.triangles)
+        # Calculate FPS
+        self.frame_times.append(current_time)
         
-        # Draw on frame
-        display_frame = self.draw_on_frame(frame)
+        # Keep only last 30 frames for FPS calculation
+        if len(self.frame_times) > 30:
+            self.frame_times.pop(0)
         
-        # Convert to QPixmap and display
-        self.display_frame(display_frame)
+        if len(self.frame_times) > 1:
+            self.fps = len(self.frame_times) / (self.frame_times[-1] - self.frame_times[0])
+        
+        # Pass frame to detection worker instead of detecting here
+        self.detection_worker.set_frame(frame)
+        
+        # Display frame immediately (without waiting for detection)
+        display_frame = frame.copy()
+        self.display_frame_quick(display_frame)
+    
+    def on_detection_ready(self, triangles, latest_triangle):
+        """Callback when detection is complete"""
+        self.triangles = triangles
+        self.latest_triangle = latest_triangle
     
     def draw_on_frame(self, frame):
         """Draw detected triangles on frame"""
@@ -304,18 +512,21 @@ class TriangleDetectorApp(QWidget):
         
         return display_frame
     
-    def display_frame(self, frame):
-        """Display frame on video widget and update status"""
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    def display_frame_quick(self, frame):
+        """Display frame immediately with latest detection results"""
+        # Draw triangles
+        display_frame = self.draw_on_frame(frame)
+        
+        # Convert to QPixmap and display
+        rgb_frame = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
         h, w, ch = rgb_frame.shape
         bytes_per_line = 3 * w
         qt_image = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format_RGB888)
         pixmap = QPixmap.fromImage(qt_image)
         self.video_display.set_pixmap(pixmap)
         
-        # Calculate distance and update status
-        status = "Wait"
-        is_ok = False
+        # Check if triangle is within acceptance zone
+        triangle_ok = False
         
         if self.latest_triangle:
             center_x = w // 2
@@ -323,14 +534,48 @@ class TriangleDetectorApp(QWidget):
             distance = abs(triangle_center_x - center_x)
             
             if distance <= self.distance_threshold:
-                status = "OK"
-                is_ok = True
+                triangle_ok = True
         
-        self.video_display.set_status(status, is_ok)
+        # Update frame counters for status stability
+        if triangle_ok:
+            self.ok_frame_count += 1
+            self.wait_frame_count = 0  # Reset wait counter
+            
+            # Show OK status after threshold frames
+            if self.ok_frame_count >= self.ok_threshold:
+                self.current_status = "OK"
+        else:
+            self.wait_frame_count += 1
+            self.ok_frame_count = 0  # Reset OK counter
+            
+            # Show Wait status after threshold frames
+            if self.wait_frame_count >= self.wait_threshold:
+                self.current_status = "Wait"
+        
+        # Update display with current stable status
+        is_ok = self.current_status == "OK"
+        self.video_display.set_status(self.current_status, is_ok)
+        
+        # Update FPS display
+        self.video_display.set_fps(self.fps)
+    
+    def toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        self.fullscreen_mode = not self.fullscreen_mode
+        
+        if self.fullscreen_mode:
+            self.showFullScreen()
+            self.fullscreen_btn.setText("Fullscreen: ON")
+        else:
+            self.showNormal()
+            self.setWindowState(Qt.WindowMaximized)
+            self.fullscreen_btn.setText("Fullscreen: OFF")
     
     def update_threshold(self, value):
         """Update distance threshold"""
         self.distance_threshold = value
+        # Update offset lines
+        self.video_display.update_offset_lines(value)
     
     def update_min_area(self, value):
         """Update minimum triangle area"""
@@ -343,7 +588,8 @@ class TriangleDetectorApp(QWidget):
             'distance_threshold': self.distance_threshold,
             'min_triangle_area': self.min_triangle_area,
             'resolution': [320, 480],
-            'camera_id': self.camera_combo.currentData()
+            'camera_id': self.camera_combo.currentData(),
+            'fullscreen_mode': self.fullscreen_mode
         }
         with open(self.config_file, 'w') as f:
             json.dump(config, f, indent=4)
@@ -357,6 +603,7 @@ class TriangleDetectorApp(QWidget):
                     config = json.load(f)
                     self.distance_threshold = config.get('distance_threshold', 15)
                     self.min_triangle_area = config.get('min_triangle_area', 10)
+                    self.fullscreen_mode = config.get('fullscreen_mode', False)
             except Exception as e:
                 print(f"Error loading config: {e}")
     
@@ -365,12 +612,16 @@ class TriangleDetectorApp(QWidget):
         if self.camera_worker is not None:
             self.camera_worker.stop()
             self.camera_worker.wait()
+        
+        if self.detection_worker is not None:
+            self.detection_worker.stop()
+        
         event.accept()
 
 def main():
     app = QApplication(sys.argv)
     window = TriangleDetectorApp()
-    window.showFullScreen()
+    window.show()
     sys.exit(app.exec())
 
 if __name__ == "__main__":
