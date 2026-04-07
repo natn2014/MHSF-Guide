@@ -18,7 +18,7 @@ echo "✓ Project directory: $SCRIPT_DIR"
 echo ""
 
 # Step 1: Check if Python 3 is installed
-echo "[1/6] Checking Python installation..."
+echo "[1/7] Checking Python installation..."
 if ! command -v python3 &> /dev/null; then
     echo "✗ Python 3 is not installed"
     echo "Install with: sudo apt-get install python3 python3-pip python3-dev"
@@ -28,8 +28,8 @@ PYTHON_VERSION=$(python3 --version)
 echo "✓ Found: $PYTHON_VERSION"
 echo ""
 
-# Step 2: Install system dependencies (Pi5 requirements for PySide6/Qt)
-echo "[2/6] Installing system dependencies for Pi5..."
+# Step 2: Install system dependencies (Pi5 requirements for PySide2/Qt)
+echo "[2/7] Installing system dependencies for Pi5..."
 if [[ $EUID -eq 0 ]]; then
     echo "     Installing Qt libraries, OpenGL support, build tools, and Python dev..."
     apt-get update -qq
@@ -42,6 +42,12 @@ if [[ $EUID -eq 0 ]]; then
         libxcb-xinerama0 libxcb-xinput0 libxcb-xkb1 libwayland-client0 \
         libwebkit2gtk-4.0-dev clang libclang-dev > /dev/null 2>&1
     echo "✓ System dependencies installed"
+    
+    # Install system PySide2 from Raspbian repository (within same step for brevity)
+    echo ""
+    echo "     Installing python3-pyside2 from Raspbian repository..."
+    apt-get install -y -qq python3-pyside2 > /dev/null 2>&1
+    echo "✓ System python3-pyside2 installed"
 else
     echo "⚠ Skipping system dependencies (requires sudo)"
     echo "  To complete setup including auto-start, run:"
@@ -51,7 +57,7 @@ fi
 echo ""
 
 # Step 3: Create Python Virtual Environment
-echo "[3/6] Creating Python virtual environment..."
+echo "[3/7] Creating Python virtual environment..."
 VENV_PATH="$SCRIPT_DIR/.venv"
 if [ ! -d "$VENV_PATH" ]; then
     # Create venv with --system-site-packages to access system python3-pyside2
@@ -63,24 +69,14 @@ else
 fi
 echo ""
 
-# Step 3b: Install system PySide2 from Raspbian repository
-if [[ $EUID -eq 0 ]]; then
-    echo "[3b/6] Installing python3-pyside2 from system repository..."
-    apt-get install -y -qq python3-pyside2 > /dev/null 2>&1
-    echo "✓ System python3-pyside2 installed"
-else
-    echo "⚠ Skipping system python3-pyside2 (requires sudo)"
-fi
-echo ""
-
 # Step 4: Upgrade pip in virtual environment
-echo "[4/6] Updating pip in virtual environment..."
+echo "[4/7] Updating pip in virtual environment..."
 "$VENV_PATH/bin/python3" -m pip install --upgrade pip setuptools wheel --quiet 2>/dev/null || true
 echo "✓ pip updated"
 echo ""
 
 # Step 5: Install remaining Python dependencies in virtual environment
-echo "[5/6] Installing remaining Python dependencies..."
+echo "[5/7] Installing remaining Python dependencies..."
 echo "     Installing: opencv-python, numpy"
 echo "     (PySide2 provided by system package, installation takes ~30-60 seconds)"
 
@@ -107,7 +103,7 @@ fi
 echo ""
 
 # Step 6: Create systemd service file
-echo "[6/6] Creating systemd service for auto-start..."
+echo "[6/7] Creating systemd service for auto-start..."
 SERVICE_FILE="/etc/systemd/system/triangle-detector.service"
 
 # Check if running with sudo for systemd installation
