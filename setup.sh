@@ -77,40 +77,53 @@ echo ""
 
 # Step 5: Install remaining Python dependencies in virtual environment
 echo "[5/7] Installing remaining Python dependencies..."
-echo "     Installing: opencv-python, numpy"
+echo "     Installing: numpy, opencv-python"
 echo "     (PyQt5 provided by system package, installation takes ~30-60 seconds)"
 
-# Install only opencv and numpy - PyQt5 comes from system package via --system-site-packages
+# Install numpy first (opencv-python depends on it)
 "$VENV_PATH/bin/python3" -m pip install \
     --default-timeout=1000 \
-    opencv-python numpy --quiet
+    numpy --quiet
+
+if [ $? -ne 0 ]; then
+    echo "⚠ NumPy installation failed, retrying..."
+    "$VENV_PATH/bin/python3" -m pip install \
+        --default-timeout=1000 \
+        --retries 5 \
+        numpy
+fi
+
+# Then install opencv-python
+"$VENV_PATH/bin/python3" -m pip install \
+    --default-timeout=1000 \
+    opencv-python --quiet
 
 if [ $? -eq 0 ]; then
     echo "✓ Python dependencies installed successfully"
-    echo "  - OpenCV: installed via pip"
     echo "  - NumPy: installed via pip"
+    echo "  - OpenCV: installed via pip"
     echo "  - PyQt5: provided by system package (python3-pyqt5)"
 else
     echo ""
-    echo "⚠ Installation failed, retrying..."
+    echo "⚠ OpenCV installation failed, retrying..."
     # Fallback retry
     "$VENV_PATH/bin/python3" -m pip install \
         --default-timeout=1000 \
         --retries 5 \
-        opencv-python numpy
+        opencv-python
     echo "✓ Python dependencies installed"
 fi
 
 # Verify all required modules are available
 echo ""
 echo "     Verifying module imports..."
-"$VENV_PATH/bin/python3" -c "import json; import cv2; import numpy; print('✓ json: OK'); print('✓ cv2 (OpenCV): OK'); print('✓ numpy: OK')" 2>/dev/null
+"$VENV_PATH/bin/python3" -c "import json; import numpy; import cv2; print('✓ json: OK'); print('✓ numpy: OK'); print('✓ cv2 (OpenCV): OK')" 2>/dev/null
 
 if [ $? -ne 0 ]; then
     echo "⚠ Warning: Some modules failed to import. Checking individually..."
     "$VENV_PATH/bin/python3" -c "import json" 2>/dev/null && echo "  ✓ json available" || echo "  ✗ json NOT available"
-    "$VENV_PATH/bin/python3" -c "import cv2" 2>/dev/null && echo "  ✓ cv2 available" || echo "  ✗ cv2 NOT available - Try: pip install opencv-python"
     "$VENV_PATH/bin/python3" -c "import numpy" 2>/dev/null && echo "  ✓ numpy available" || echo "  ✗ numpy NOT available - Try: pip install numpy"
+    "$VENV_PATH/bin/python3" -c "import cv2" 2>/dev/null && echo "  ✓ cv2 available" || echo "  ✗ cv2 NOT available - Try: pip install opencv-python"
     exit 1
 fi
 
