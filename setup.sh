@@ -69,24 +69,24 @@ echo ""
 
 # Step 5: Install Python dependencies in virtual environment
 echo "[5/6] Installing Python dependencies..."
-echo "     Installing: PySide6, opencv-python, numpy"
-echo "     (This may take 5-10 minutes on first install as PySide6 may need to compile)"
+echo "     Installing: PySide6 6.7.x (best ARM support), opencv-python, numpy"
+echo "     (This may take 5-10 minutes on first install as compilation may be needed)"
 
-# Try to install with longer timeout and proper pip cache handling
+# Try to install specific PySide6 version optimized for ARM (6.7.x has best Pi5 support)
 if "$VENV_PATH/bin/python3" -m pip install \
     --default-timeout=1000 \
-    --no-cache-dir \
-    --no-binary PySide6 \
-    PySide6 opencv-python numpy 2>&1; then
+    'PySide6>=6.7.0,<6.8.0' \
+    opencv-python numpy 2>&1; then
     echo "✓ Core dependencies installed successfully"
 else
     echo ""
-    echo "⚠ First attempt failed, retrying with continued installation..."
-    # Retry with fallback - install without --no-binary flag
+    echo "⚠ Version 6.7.x installation failed, trying flexible versioning..."
+    # Fallback to any recent stable version with good ARM support
     "$VENV_PATH/bin/python3" -m pip install \
         --default-timeout=1000 \
         --retries 5 \
-        PySide6 opencv-python numpy
+        'PySide6>=6.6.0' \
+        opencv-python numpy
     echo "✓ Core dependencies installed"
 fi
 echo ""
