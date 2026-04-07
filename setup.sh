@@ -54,10 +54,22 @@ echo ""
 echo "[3/6] Creating Python virtual environment..."
 VENV_PATH="$SCRIPT_DIR/.venv"
 if [ ! -d "$VENV_PATH" ]; then
-    python3 -m venv "$VENV_PATH"
+    # Create venv with --system-site-packages to access system python3-pyside2
+    python3 -m venv --system-site-packages "$VENV_PATH"
     echo "✓ Virtual environment created at: $VENV_PATH"
+    echo "  (with system site-packages enabled for PySide2)"
 else
     echo "✓ Virtual environment already exists"
+fi
+echo ""
+
+# Step 3b: Install system PySide2 from Raspbian repository
+if [[ $EUID -eq 0 ]]; then
+    echo "[3b/6] Installing python3-pyside2 from system repository..."
+    apt-get install -y -qq python3-pyside2 > /dev/null 2>&1
+    echo "✓ System python3-pyside2 installed"
+else
+    echo "⚠ Skipping system python3-pyside2 (requires sudo)"
 fi
 echo ""
 
@@ -67,29 +79,30 @@ echo "[4/6] Updating pip in virtual environment..."
 echo "✓ pip updated"
 echo ""
 
-# Step 5: Install Python dependencies in virtual environment
-echo "[5/6] Installing Python dependencies..."
-echo "     Installing: PySide2 5.15.x (best Pi5 compatibility), opencv-python, numpy"
-echo "     (Installation takes ~1-2 minutes - pre-built wheels, no compilation needed)"
+# Step 5: Install remaining Python dependencies in virtual environment
+echo "[5/6] Installing remaining Python dependencies..."
+echo "     Installing: opencv-python, numpy"
+echo "     (PySide2 provided by system package, installation takes ~30-60 seconds)"
 
-# Install PySide2 5.15.x - has excellent pre-built ARM64 wheels, faster and more reliable than PySide6
+# Install only opencv and numpy - PySide2 comes from system package via --system-site-packages
 "$VENV_PATH/bin/python3" -m pip install \
     --default-timeout=1000 \
-    'PySide2>=5.15.0,<5.16.0' \
     opencv-python numpy --quiet
 
 if [ $? -eq 0 ]; then
-    echo "✓ Core dependencies installed successfully"
+    echo "✓ Python dependencies installed successfully"
+    echo "  - OpenCV: installed via pip"
+    echo "  - NumPy: installed via pip"
+    echo "  - PySide2: provided by system package (python3-pyside2)"
 else
     echo ""
-    echo "⚠ Installation failed, retrying with flexible versioning..."
-    # Fallback to any stable PySide2 5.15.x version
+    echo "⚠ Installation failed, retrying..."
+    # Fallback retry
     "$VENV_PATH/bin/python3" -m pip install \
         --default-timeout=1000 \
         --retries 5 \
-        'PySide2>=5.15.0' \
         opencv-python numpy
-    echo "✓ Core dependencies installed"
+    echo "✓ Python dependencies installed"
 fi
 echo ""
 
