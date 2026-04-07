@@ -100,6 +100,20 @@ else
         opencv-python numpy
     echo "✓ Python dependencies installed"
 fi
+
+# Verify all required modules are available
+echo ""
+echo "     Verifying module imports..."
+"$VENV_PATH/bin/python3" -c "import json; import cv2; import numpy; print('✓ json: OK'); print('✓ cv2 (OpenCV): OK'); print('✓ numpy: OK')" 2>/dev/null
+
+if [ $? -ne 0 ]; then
+    echo "⚠ Warning: Some modules failed to import. Checking individually..."
+    "$VENV_PATH/bin/python3" -c "import json" 2>/dev/null && echo "  ✓ json available" || echo "  ✗ json NOT available"
+    "$VENV_PATH/bin/python3" -c "import cv2" 2>/dev/null && echo "  ✓ cv2 available" || echo "  ✗ cv2 NOT available - Try: pip install opencv-python"
+    "$VENV_PATH/bin/python3" -c "import numpy" 2>/dev/null && echo "  ✓ numpy available" || echo "  ✗ numpy NOT available - Try: pip install numpy"
+    exit 1
+fi
+
 echo ""
 
 # Step 6: Create systemd service file
