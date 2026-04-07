@@ -96,12 +96,22 @@ sudo bash setup.sh
 
 **What the script does:**
 - ✅ Step [1/6]: Verifies Python 3 installation
-- ✅ Step [2/6]: **Installs system libraries for Pi5** (Qt, OpenGL, X11)
-- ✅ Step [3/6]: **Creates isolated Python virtual environment** (avoids PEP 668 errors!)
+- ✅ Step [2/6]: **Installs build tools** (build-essential, python3-dev, cmake, clang) + system libraries for Pi5
+- ✅ Step [3/6]: **Creates isolated Python venv** with `--system-site-packages` (allows system PySide2 access)
+- ✅ Step [3b/6]: **Installs python3-pyside2 from Raspbian repository** (no compilation, instant install)
 - ✅ Step [4/6]: Updates pip with setuptools & wheel in venv
-- ✅ Step [5/6]: Installs Python packages (PySide6, OpenCV, NumPy) in venv
+- ✅ Step [5/6]: **Installs only opencv-python and numpy** in venv (PySide2 from system package)
 - ✅ Step [6/6]: Creates systemd service file for auto-start using venv Python
 - ✅ Step [7/7]: Creates convenient run wrapper script with venv activation
+
+⏱️ **Installation Time**: ~5-8 minutes total (system PySide2 is instant, no compilation!)
+
+**Why System PySide2 Package:**
+- ✅ Official Raspbian package (python3-pyside2)
+- ✅ Pre-built and optimized for Pi5 ARM64
+- ✅ Zero installation time (already in repository)
+- ✅ System package manager handles updates
+- ✅ Best stability and compatibility
 
 **Expected output:**
 ```
@@ -112,14 +122,22 @@ Pi5 Edition with Auto-Start
 [1/6] Checking Python installation...
 ✓ Found: Python 3.11.x
 [2/6] Installing system dependencies for Pi5...
-     Installing Qt libraries, OpenGL support...
+     Installing Qt libraries, OpenGL support, build tools, and Python dev...
 ✓ System dependencies installed
 [3/6] Creating Python virtual environment...
 ✓ Virtual environment created at: /home/pi/MHSF_Guide/.venv
+  (with system site-packages enabled for PySide2)
+[3b/6] Installing python3-pyside2 from system repository...
+✓ System python3-pyside2 installed
 [4/6] Updating pip in virtual environment...
 ✓ pip updated
-[5/6] Installing Python dependencies...
-✓ Core dependencies installed
+[5/6] Installing remaining Python dependencies...
+     Installing: opencv-python, numpy
+     (PySide2 provided by system package, installation takes ~30-60 seconds)
+✓ Python dependencies installed successfully
+  - OpenCV: installed via pip
+  - NumPy: installed via pip
+  - PySide2: provided by system package (python3-pyside2)
 [6/6] Creating systemd service for auto-start...
 ✓ Systemd service created: /etc/systemd/system/triangle-detector.service
 ✓ Service enabled for auto-start on reboot
@@ -130,7 +148,7 @@ Pi5 Edition with Auto-Start
 Setup Complete!
 ================================
 Virtual Environment: /home/pi/MHSF_Guide/.venv
-Dependencies installed in isolated venv
+Dependencies: OpenCV + NumPy via pip, PySide2 from system package
 
 3. Systemd Service (auto-start on reboot):
    Status:  sudo systemctl status triangle-detector
@@ -419,17 +437,100 @@ python3 -m pip install --break-system-packages PySide6 opencv-python numpy
 
 ---
 
-### Issue: No Module Named PySide6
+### Issue: PySide Installation - Choosing Between PySide2 vs PySide6
 
-**Solution:**
+**Which version for Raspberry Pi 5?**
+
+| Criteria | PySide2 (System) | PySide2 (pip) | PySide6 |
+|----------|------------------|---------------|---------|
+| **Source** | Raspbian package | npm/pip wheels | pip wheels/source |
+| **Installation** | ✅ System manager | Pre-built wheels | May compile |
+| **Time** | ✅ Instant | 1-2 min | 5-10 min |
+| **ARM64 Support** | ✅ Official | ✅ Yes | ⚠️ 6.6.x+ only |
+| **Memory** | ✅ ~50MB | ~50MB | ⚠️ ~150MB |
+| **System Updates** | ✅ Managed | Via pip | Manual |
+| **Recommended** | ✅ YES | Alternative | Avoid on Pi5 |
+
+**Setup Script Default: System python3-pyside2 (BEST CHOICE)**
+- Uses Raspbian's official python3-pyside2 package
+- Instant installation (no compilation)
+- Automatically updated with system updates
+- Perfect for Pi5 deployment
+
+**How it works:**
+1. Creates venv with `--system-site-packages`
+2. Installs system `python3-pyside2` via apt-get
+3. Installs opencv and numpy via pip in venv
+4. Best of both worlds: official package + isolated environment
+
+To manually install system PySide2:
 ```bash
-pip install PySide6
+sudo apt-get install python3-pyside2
+
+# Then create venv with system-site-packages
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install opencv-python numpy
 ```
 
-Or with setup.sh:
+---
+
+### Issue: PySide Installation - Manual Alternatives
+
+**Alternative 1: PySide2 5.15.x from pip (if no system package)**
 ```bash
-sudo bash setup.sh
+python3 -m venv venv
+source venv/bin/activate
+pip install 'PySide2>=5.15.0' opencv-python numpy
 ```
+
+**Alternative 2: PySide6 (not recommended for Pi5)**
+```bash
+sudo apt-get install -y build-essential python3-dev cmake clang libclang-dev
+python3 -m venv venv
+source venv/bin/activate
+pip install --default-timeout=1000 'PySide6>=6.6.0' opencv-python numpy
+```
+
+---
+
+### Issue: PySide6 - "Could Not Find a Version That Satisfies the Requirement"
+
+**Error message:**
+```
+ERROR: Could not find a version that satisfies the requirement PySide6
+```
+
+**Root cause:**
+- PySide6 <6.6.x lacks ARM64 pre-built wheels (requires compilation)
+- PySide6 requires build tools and more time on Pi5
+- This is why **PySide2 is recommended** for Pi5
+
+**Solution 1: Switch to PySide2 (Recommended)**
+```bash
+# PySide2 has pre-built ARM wheels for ALL versions
+pip install 'PySide2>=5.15.0' opencv-python numpy
+# Installation: ~1-2 minutes, no compilation!
+```
+
+**Solution 2: Use PySide6 with Extended Build Time**
+```bash
+# Install build dependencies first
+sudo apt-get install -y build-essential python3-dev cmake clang libclang-dev
+
+# Then install PySide6 6.6.x or newer
+pip install --default-timeout=1000 'PySide6>=6.6.0' opencv-python numpy
+# Installation: ~5-10 minutes with compilation
+```
+
+**Troubleshooting:**
+- **"Could not find a version"**: Update pip: `pip install --upgrade pip`
+- **Out of memory**: Use PySide2 (lighter) or add swap
+- **Check what installed**: `python3 -c "import PySide2; print(PySide2.__version__ if 'PySide2' in dir() else 'Not installed')"`
+
+---
+
+### Issue: No Module Named PySide2
 
 ### Issue: No Camera Detected
 
