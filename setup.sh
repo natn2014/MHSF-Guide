@@ -43,21 +43,32 @@ else
 fi
 echo ""
 
-# Step 3: Upgrade pip
-echo "[3/6] Updating pip..."
-python3 -m pip install --upgrade pip setuptools wheel --quiet 2>/dev/null || true
+# Step 3: Create Python Virtual Environment
+echo "[3/6] Creating Python virtual environment..."
+VENV_PATH="$SCRIPT_DIR/.venv"
+if [ ! -d "$VENV_PATH" ]; then
+    python3 -m venv "$VENV_PATH"
+    echo "✓ Virtual environment created at: $VENV_PATH"
+else
+    echo "✓ Virtual environment already exists"
+fi
+echo ""
+
+# Step 4: Upgrade pip in virtual environment
+echo "[4/6] Updating pip in virtual environment..."
+"$VENV_PATH/bin/python3" -m pip install --upgrade pip setuptools wheel --quiet 2>/dev/null || true
 echo "✓ pip updated"
 echo ""
 
-# Step 4: Install Python dependencies
-echo "[4/6] Installing Python dependencies..."
+# Step 5: Install Python dependencies in virtual environment
+echo "[5/6] Installing Python dependencies..."
 echo "     Installing: PySide6, opencv-python, numpy"
-python3 -m pip install PySide6 opencv-python numpy --quiet
+"$VENV_PATH/bin/python3" -m pip install PySide6 opencv-python numpy --quiet
 echo "✓ Core dependencies installed"
 echo ""
 
-# Step 5: Create systemd service file
-echo "[5/6] Creating systemd service for auto-start..."
+# Step 6: Create systemd service file
+echo "[6/6] Creating systemd service for auto-start..."
 SERVICE_FILE="/etc/systemd/system/triangle-detector.service"
 
 # Check if running with sudo for systemd installation
@@ -85,7 +96,7 @@ Environment="LD_LIBRARY_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/lib:/usr/
 Environment="HOME=/home/pi"
 WorkingDirectory=/home/pi/MHSF_Guide
 ExecStartPre=/bin/sleep 3
-ExecStart=/usr/bin/python3 /home/pi/MHSF_Guide/triangle_detector_app_CV.py
+ExecStart=/home/pi/MHSF_Guide/.venv/bin/python3 /home/pi/MHSF_Guide/triangle_detector_app_CV.py
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -107,8 +118,8 @@ EOF
     echo ""
 fi
 
-# Step 6: Create run script wrapper
-echo "[6/6] Creating run wrapper script..."
+# Step 7: Create run script wrapper
+echo "[7/7] Creating run wrapper script..."
 RUN_SCRIPT="$SCRIPT_DIR/run_detector.sh"
 
 cat > "$RUN_SCRIPT" << 'EOF'
@@ -119,6 +130,15 @@ cat > "$RUN_SCRIPT" << 'EOF'
 cd "$(dirname "$0")"
 echo "Starting MHSF Triangle Detector..."
 echo "Press Ctrl+C to exit"
+echo ""
+
+# Activate virtual environment
+if [ -d ".venv" ]; then
+    source .venv/bin/activate
+    echo "✓ Virtual environment activated"
+else
+    echo "⚠ Warning: Virtual environment not found. Install dependencies first with: bash setup.sh"
+fi
 echo ""
 
 # Ensure display environment is set
@@ -144,6 +164,9 @@ echo ""
 echo "================================"
 echo "Setup Complete!"
 echo "================================"
+echo ""
+echo "Virtual Environment: $VENV_PATH"
+echo "Dependencies installed in isolated venv"
 echo ""
 echo "Options to run the app:"
 echo ""
