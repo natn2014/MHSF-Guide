@@ -1,10 +1,10 @@
 import sys
 import cv2
 import numpy as np
-from PySide2.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, QSpinBox, 
+from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, QSpinBox, 
                               QHBoxLayout, QPushButton, QComboBox, QGridLayout, QTextEdit, QFrame)
-from PySide2.QtGui import QImage, QPixmap, QFont, QColor
-from PySide2.QtCore import QTimer, Qt, QThread, Signal, QRect, QSize
+from PyQt5.QtGui import QImage, QPixmap, QFont, QColor
+from PyQt5.QtCore import QTimer, Qt, QThread, Signal, QRect, QSize
 import json
 import os
 import time

@@ -1,10 +1,10 @@
 import sys
 import cv2
 import time
-from PySide6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, 
+from PyQt5.QtWidgets import (QApplication, QWidget, QVBoxLayout, QLabel, 
                               QHBoxLayout, QComboBox, QFrame)
-from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtCore import QTimer, Qt, QThread, Signal
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtCore import QTimer, Qt, QThread, Signal
 
 class CameraWorker(QThread):
     frame_ready = Signal(object)  # tuple: (frame, fps)

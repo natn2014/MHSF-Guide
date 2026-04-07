@@ -28,7 +28,7 @@ PYTHON_VERSION=$(python3 --version)
 echo "✓ Found: $PYTHON_VERSION"
 echo ""
 
-# Step 2: Install system dependencies (Pi5 requirements for PySide2/Qt)
+# Step 2: Install system dependencies (Pi5 requirements for PyQt5/Qt)
 echo "[2/7] Installing system dependencies for Pi5..."
 if [[ $EUID -eq 0 ]]; then
     echo "     Installing Qt libraries, OpenGL support, build tools, and Python dev..."
@@ -43,11 +43,11 @@ if [[ $EUID -eq 0 ]]; then
         libwebkit2gtk-4.0-dev clang libclang-dev > /dev/null 2>&1
     echo "✓ System dependencies installed"
     
-    # Install system PySide2 from Raspbian repository (within same step for brevity)
+    # Install system PyQt5 from Raspbian repository (within same step for brevity)
     echo ""
-    echo "     Installing python3-pyside2 from Raspbian repository..."
-    apt-get install -y -qq python3-pyside2 > /dev/null 2>&1
-    echo "✓ System python3-pyside2 installed"
+    echo "     Installing python3-pyqt5 from Raspbian repository..."
+    apt-get install -y -qq python3-pyqt5 > /dev/null 2>&1
+    echo "✓ System python3-pyqt5 installed"
 else
     echo "⚠ Skipping system dependencies (requires sudo)"
     echo "  To complete setup including auto-start, run:"
@@ -60,10 +60,10 @@ echo ""
 echo "[3/7] Creating Python virtual environment..."
 VENV_PATH="$SCRIPT_DIR/.venv"
 if [ ! -d "$VENV_PATH" ]; then
-    # Create venv with --system-site-packages to access system python3-pyside2
+    # Create venv with --system-site-packages to access system python3-pyqt5
     python3 -m venv --system-site-packages "$VENV_PATH"
     echo "✓ Virtual environment created at: $VENV_PATH"
-    echo "  (with system site-packages enabled for PySide2)"
+    echo "  (with system site-packages enabled for PyQt5)"
 else
     echo "✓ Virtual environment already exists"
 fi
@@ -78,9 +78,9 @@ echo ""
 # Step 5: Install remaining Python dependencies in virtual environment
 echo "[5/7] Installing remaining Python dependencies..."
 echo "     Installing: opencv-python, numpy"
-echo "     (PySide2 provided by system package, installation takes ~30-60 seconds)"
+echo "     (PyQt5 provided by system package, installation takes ~30-60 seconds)"
 
-# Install only opencv and numpy - PySide2 comes from system package via --system-site-packages
+# Install only opencv and numpy - PyQt5 comes from system package via --system-site-packages
 "$VENV_PATH/bin/python3" -m pip install \
     --default-timeout=1000 \
     opencv-python numpy --quiet
@@ -89,7 +89,7 @@ if [ $? -eq 0 ]; then
     echo "✓ Python dependencies installed successfully"
     echo "  - OpenCV: installed via pip"
     echo "  - NumPy: installed via pip"
-    echo "  - PySide2: provided by system package (python3-pyside2)"
+    echo "  - PyQt5: provided by system package (python3-pyqt5)"
 else
     echo ""
     echo "⚠ Installation failed, retrying..."

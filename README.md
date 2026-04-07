@@ -94,7 +94,7 @@ Camera Input (30 FPS)
 
 ## 📦 Dependencies
 
-- **PySide6**: Qt6 GUI framework
+- **PyQt5**: Qt5 GUI framework (system package: python3-pyqt5)
 - **OpenCV (cv2)**: Computer vision & image processing
 - **NumPy**: Numeric computations
 - **Python 3.8+** standard libraries (json, time, threading, etc.)
@@ -230,7 +230,7 @@ python3 triangle_detector_app_CV.py --debug
 
 - **Development**: MHSF Project Team
 - **Computer Vision**: OpenCV implementation
-- **GUI**: PySide6 framework
+- **GUI**: PyQt5 framework
 - **Platform**: Raspberry Pi 5 optimized
 
 ## 🤝 Contributing
@@ -248,9 +248,14 @@ For issues or questions, consult:
 
 **Status**: ✅ Production Ready | **Last Updated**: April 2026
 
-### 2. Install Dependencies
+### 2. Install Dependencies (Desktop)
 ```bash
-pip install PySide6 opencv-python numpy
+pip install PyQt5 opencv-python numpy
+```
+
+**OR** on Raspberry Pi 5:
+```bash
+sudo bash setup.sh
 ```
 
 ### 3. Run Application
@@ -428,7 +433,7 @@ Status Update & Rendering
 ### App Crashes on Startup
 - Verify camera is accessible: `cv2.VideoCapture(0).isOpened()`
 - Check Python version: `python --version` (3.8+ required)
-- Reinstall dependencies: `pip install --upgrade PySide6 opencv-python`
+- Reinstall dependencies: `pip install --upgrade PyQt5 opencv-python`
 
 ### Status Always Shows "Wait"
 - Increase **Distance Threshold** value
@@ -510,12 +515,12 @@ Open source - Free to use and modify
 
 For issues or questions:
 1. Check **Troubleshooting** section above
-2. Verify all dependencies: `pip list | grep -E "PySide6|opencv|numpy"`
+2. Verify all dependencies: `pip list | grep -E "PyQt5|opencv|numpy"`
 3. Test with sample video or different camera
 
 ## Credits
 
-- **PySide6**: Qt framework for Python
+- **PyQt5**: Qt framework for Python (from system package python3-pyqt5)
 - **OpenCV**: Computer vision library
 - **NumPy**: Numerical computing
 - **YOLO**: Optional deep learning backend
@@ -524,8 +529,12 @@ For issues or questions:
 
 **Quick Start:**
 ```bash
-pip install PySide6 opencv-python numpy
+# Desktop: Install PyQt5 first
+pip install PyQt5 opencv-python numpy
 python triangle_detector_app_CV.py
+
+# Raspberry Pi 5: Use setup.sh which installs system python3-pyqt5
+sudo bash setup.sh
 ```
 
 Press **ESC** to exit fullscreen.

@@ -16,7 +16,7 @@ echo ""
 
 # Check if dependencies are installed
 echo "Checking dependencies..."
-python3 -c "import PySide6; import cv2; import numpy" 2>/dev/null
+python3 -c "import PyQt5; import cv2; import numpy" 2>/dev/null
 if [ $? -ne 0 ]; then
     echo "✗ Missing dependencies!"
     echo "Run setup first: bash setup.sh"

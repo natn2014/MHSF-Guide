@@ -13,7 +13,7 @@ python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies (no PEP 668 issues!)
-pip install PySide6 opencv-python numpy
+pip install PyQt5 opencv-python numpy
 
 # Run application
 python3 triangle_detector_app_CV.py
@@ -96,17 +96,17 @@ sudo bash setup.sh
 
 **What the script does:**
 - ✅ Step [1/7]: Verifies Python 3 installation
-- ✅ Step [2/7]: **Installs system dependencies + python3-pyside2** (build tools, Qt libraries, PySide2 from Raspbian)
-- ✅ Step [3/7]: **Creates isolated Python venv** with `--system-site-packages` (accesses system PySide2)
+- ✅ Step [2/7]: **Installs system dependencies + python3-pyqt5** (build tools, Qt libraries, PyQt5 from Raspbian)
+- ✅ Step [3/7]: **Creates isolated Python venv** with `--system-site-packages` (accesses system PyQt5)
 - ✅ Step [4/7]: Updates pip with setuptools & wheel in venv
-- ✅ Step [5/7]: **Installs opencv-python and numpy** in venv (PySide2 from system package)
+- ✅ Step [5/7]: **Installs opencv-python and numpy** in venv (PyQt5 from system package)
 - ✅ Step [6/7]: Creates systemd service file for auto-start using venv Python
 - ✅ Step [7/7]: Creates convenient run wrapper script with venv activation
 
-⏱️ **Installation Time**: ~5-8 minutes total (system PySide2 is instant, no compilation!)
+⏱️ **Installation Time**: ~5-8 minutes total (system PyQt5 is instant, no compilation!)
 
-**Why System PySide2 Package:**
-- ✅ Official Raspbian package (python3-pyside2)
+**Why System PyQt5 Package:**
+- ✅ Official Raspbian package (python3-pyqt5)
 - ✅ Pre-built and optimized for Pi5 ARM64
 - ✅ Zero installation time (already in repository)
 - ✅ System package manager handles updates
@@ -123,20 +123,20 @@ Pi5 Edition with Auto-Start
 [2/7] Installing system dependencies for Pi5...
      Installing Qt libraries, OpenGL support, build tools, and Python dev...
 ✓ System dependencies installed
-     Installing python3-pyside2 from Raspbian repository...
-✓ System python3-pyside2 installed
+     Installing python3-pyqt5 from Raspbian repository...
+✓ System python3-pyqt5 installed
 [3/7] Creating Python virtual environment...
 ✓ Virtual environment created at: /home/pi/MHSF_Guide/.venv
-  (with system site-packages enabled for PySide2)
+  (with system site-packages enabled for PyQt5)
 [4/7] Updating pip in virtual environment...
 ✓ pip updated
 [5/7] Installing remaining Python dependencies...
      Installing: opencv-python, numpy
-     (PySide2 provided by system package, installation takes ~30-60 seconds)
+     (PyQt5 provided by system package, installation takes ~30-60 seconds)
 ✓ Python dependencies installed successfully
   - OpenCV: installed via pip
   - NumPy: installed via pip
-  - PySide2: provided by system package (python3-pyside2)
+  - PyQt5: provided by system package (python3-pyqt5)
 [6/7] Creating systemd service for auto-start...
 ✓ Systemd service created: /etc/systemd/system/triangle-detector.service
 ✓ Service enabled for auto-start on reboot
@@ -147,7 +147,7 @@ Pi5 Edition with Auto-Start
 Setup Complete!
 ================================
 Virtual Environment: /home/pi/MHSF_Guide/.venv
-Dependencies: OpenCV + NumPy via pip, PySide2 from system package
+Dependencies: OpenCV + NumPy via pip, PyQt5 from system package
 
 3. Systemd Service (auto-start on reboot):
    Status:  sudo systemctl status triangle-detector
@@ -203,7 +203,7 @@ source venv/bin/activate
 #### 2b. Install Dependencies
 ```bash
 pip install --upgrade pip setuptools wheel
-pip install PySide6 opencv-python numpy
+pip install PyQt5 opencv-python numpy
 ```
 
 #### 2c. Run Application
@@ -220,13 +220,15 @@ If `setup.sh` with sudo encountered issues:
 #### 3a. Install Dependencies Manually
 ```bash
 sudo apt-get update
-sudo apt-get install -y python3 python3-pip python3-dev \
+sudo apt-get install -y python3 python3-pip python3-dev python3-pyqt5 \
     libgl1-mesa-glx libxkbcommon-x11-0 libdbus-1-3 \
     libfontconfig1 libfreetype6 libx11-6 libxcb1 \
     libwayland-client0
 
-python3 -m pip install --upgrade pip
-python3 -m pip install PySide6 opencv-python numpy
+python3 -m venv --system-site-packages venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install opencv-python numpy
 ```
 
 #### 3b. Create Service File Manually
@@ -248,8 +250,7 @@ Group=pi
 Environment="DISPLAY=:0"
 Environment="XAUTHORITY=/home/pi/.Xauthority"
 Environment="QT_QPA_PLATFORM=xcb"
-Environment="QT_QPA_PLATFORM_PLUGIN_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/plugins"
-Environment="LD_LIBRARY_PATH=/usr/lib/python3/dist-packages/PySide6/Qt/lib:/usr/lib/arm-linux-gnueabihf:/usr/local/lib:$LD_LIBRARY_PATH"
+# PyQt5 from system package - no custom plugin paths needed
 Environment="HOME=/home/pi"
 WorkingDirectory=/home/pi/MHSF_Guide
 ExecStartPre=/bin/sleep 3
@@ -408,10 +409,10 @@ Modern versions of Raspberry Pi OS (and Debian) use PEP 668 to prevent system pi
 
 **Solution 1: Use Virtual Environment (Recommended)**
 ```bash
-# Desktop/Manual setup
+# Desktop/Manual setup - Use PyQt5
 python3 -m venv venv
 source venv/bin/activate  # or: source .venv/bin/activate
-pip install PySide6 opencv-python numpy
+pip install PyQt5 opencv-python numpy
 ```
 
 **Solution 2: Automated Setup Script (for Pi5)**
@@ -430,41 +431,41 @@ The setup.sh script automatically:
 **Solution 3: System-Wide Installation (Not Recommended)**
 If you absolutely need system-wide installation:
 ```bash
-python3 -m pip install --break-system-packages PySide6 opencv-python numpy
+python3 -m pip install --break-system-packages PyQt5 opencv-python numpy
 ```
-⚠️ **Warning**: This bypasses PEP 668 safety checks and can cause conflicts with system updates.
+⚠️ **Warning**: This bypasses PEP 668 safety checks and can cause conflicts with system updates. **Instead, use solution 1 or 2 with venv.**
 
 ---
 
-### Issue: PySide Installation - Choosing Between PySide2 vs PySide6
+### Issue: PySide Installation - Choosing Between PyQt5 vs PySide2
 
 **Which version for Raspberry Pi 5?**
 
-| Criteria | PySide2 (System) | PySide2 (pip) | PySide6 |
-|----------|------------------|---------------|---------|
-| **Source** | Raspbian package | npm/pip wheels | pip wheels/source |
-| **Installation** | ✅ System manager | Pre-built wheels | May compile |
-| **Time** | ✅ Instant | 1-2 min | 5-10 min |
-| **ARM64 Support** | ✅ Official | ✅ Yes | ⚠️ 6.6.x+ only |
-| **Memory** | ✅ ~50MB | ~50MB | ⚠️ ~150MB |
-| **System Updates** | ✅ Managed | Via pip | Manual |
-| **Recommended** | ✅ YES | Alternative | Avoid on Pi5 |
+| Criteria | PyQt5 (System) | PyQt5 (pip) | PySide2 | PySide6 |
+|----------|----------------|------------|---------|---------|
+| **Source** | Raspbian package | PyPI wheels | PyPI wheels | pip/source |
+| **Installation** | ✅ System manager | Pre-built wheels | Pre-built wheels | May compile |
+| **Time** | ✅ Instant | 1-2 min | 1-2 min | 5-10 min |
+| **ARM64 Support** | ✅ Official | ✅ Yes | ✅ Yes | ⚠️ 6.6.x+ only |
+| **Memory** | ✅ ~50MB | ~50MB | ~50MB | ⚠️ ~150MB |
+| **System Updates** | ✅ Managed | Via pip | Via pip | Manual |
+| **Recommended** | ✅ YES | Alternative | Alternative | Avoid on Pi5 |
 
-**Setup Script Default: System python3-pyside2 (BEST CHOICE)**
-- Uses Raspbian's official python3-pyside2 package
+**Setup Script Default: System python3-pyqt5 (BEST CHOICE)**
+- Uses Raspbian's official python3-pyqt5 package
 - Instant installation (no compilation)
 - Automatically updated with system updates
 - Perfect for Pi5 deployment
 
 **How it works:**
 1. Creates venv with `--system-site-packages`
-2. Installs system `python3-pyside2` via apt-get
+2. Installs system `python3-pyqt5` via apt-get
 3. Installs opencv and numpy via pip in venv
 4. Best of both worlds: official package + isolated environment
 
-To manually install system PySide2:
+To manually install system PyQt5:
 ```bash
-sudo apt-get install python3-pyside2
+sudo apt-get install python3-pyqt5
 
 # Then create venv with system-site-packages
 python3 -m venv --system-site-packages venv
@@ -474,16 +475,23 @@ pip install opencv-python numpy
 
 ---
 
-### Issue: PySide Installation - Manual Alternatives
+### Issue: PyQt5/PySide Installation - Manual Alternatives
 
-**Alternative 1: PySide2 5.15.x from pip (if no system package)**
+**Alternative 1: PyQt5 from pip (if no system package)**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install PyQt5 opencv-python numpy
+```
+
+**Alternative 2: PySide2 from pip (lightweight option)**
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install 'PySide2>=5.15.0' opencv-python numpy
 ```
 
-**Alternative 2: PySide6 (not recommended for Pi5)**
+**Alternative 3: PySide6 (not recommended for Pi5)**
 ```bash
 sudo apt-get install -y build-essential python3-dev cmake clang libclang-dev
 python3 -m venv venv
@@ -617,7 +625,7 @@ After installation, verify each step:
 
 - [ ] Python 3.8+ installed: `python3 --version`
 - [ ] pip working: `pip --version`
-- [ ] PySide6 installed: `python3 -c "import PySide6; print('OK')"`
+- [ ] PyQt5 installed: `python3 -c "import PyQt5; print('OK')"`
 - [ ] OpenCV installed: `python3 -c "import cv2; print('OK')"`
 - [ ] NumPy installed: `python3 -c "import numpy; print('OK')"`
 - [ ] Camera detected: `python3 -c "import cv2; print(cv2.VideoCapture(0).isOpened())"`
@@ -689,9 +697,13 @@ sudo apt-get install python3 python3-pip
 bash setup.sh
 ```
 
-### "No module named 'PySide6'"
+### "No module named 'PyQt5'"
 ```bash
-python3 -m pip install --upgrade PySide6
+# Desktop: Install from pip
+python3 -m pip install --upgrade PyQt5
+
+# Raspberry Pi: Use system package (recommended)
+sudo apt-get install -y python3-pyqt5
 ```
 
 ### "Cannot open camera"
@@ -825,7 +837,13 @@ sudo systemctl daemon-reload
 
 ### Remove Installation
 ```bash
-python3 -m pip uninstall PySide6 opencv-python numpy -y
+# Desktop/Manual:
+python3 -m pip uninstall PyQt5 opencv-python numpy -y
+
+# Raspberry Pi (system package):
+sudo apt-get remove -y python3-pyqt5
+
+# Remove project:
 rm -rf ~/MHSF_Guide
 ```
 
@@ -844,9 +862,10 @@ print(f"Python: {sys.version}")
 print(f"OS: {platform.system()}")
 print(f"OpenCV: {cv2.__version__}")
 try:
-    from PySide6 import QtCore
-    print(f"PySide6: {QtCore.__version__}")
-except: pass
+    from PyQt5 import QtCore
+    print(f"PyQt5: {QtCore.PYQT_VERSION_STR}")
+except:
+    print("PyQt5: Not installed")
 print(f"Camera 0: {cv2.VideoCapture(0).isOpened()}")
 EOF
 ```
